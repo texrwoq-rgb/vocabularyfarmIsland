@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mini Farm Island 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#263b4d;--muted:#82909a;--green:#12bf68;--gold:#ffc928;--glass:rgba(255,255,255,.9);--line:rgba(65,91,108,.15)}
+  *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;font-family:'Kanit',sans-serif;color:var(--ink);background:#75cbed;user-select:none}
+  #game{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none}
+  .panel{position:fixed;z-index:5;background:var(--glass);border:1px solid rgba(255,255,255,.7);border-radius:17px;box-shadow:0 12px 35px rgba(22,67,89,.13);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px)}
+  #hud{left:16px;top:16px;width:220px;padding:13px}
+  .brand{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;letter-spacing:.1px;margin:1px 3px 11px;white-space:nowrap}
+  .stat{background:rgba(245,248,250,.92);border-radius:12px;padding:9px 10px;display:flex;align-items:center;gap:10px;margin-bottom:8px;min-height:54px}
+  .statIcon{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:#fff;font-size:19px;flex-shrink:0}
+  .statLabel{display:block;font-size:11px;color:#7c8991;line-height:1.3}.statValue{display:block;font-size:16px;line-height:1.45;font-weight:700}
+  .sellBtn{width:100%;border:0;border-radius:11px;padding:11px 8px;font-family:inherit;font-weight:700;font-size:13px;background:#f2c400;color:#6a5200;box-shadow:0 3px 0 #d4a900;cursor:pointer;transition:transform .12s,filter .12s}
+  .sellBtn:disabled{background:#ddd;color:#9ba3a7;box-shadow:0 3px 0 #c5c5c5;cursor:not-allowed}.sellBtn:not(:disabled):hover{filter:brightness(1.04);transform:translateY(-1px)}
+  .hintTiny{text-align:center;font-size:10px;color:#8b989d;margin-top:7px}
+  #shop{right:16px;top:16px;width:255px;padding:12px;max-height:calc(100vh - 32px);overflow:auto;scrollbar-width:thin}
+  .tabs{display:flex;gap:3px;border-bottom:1px solid var(--line);margin-bottom:9px}
+  .tab{flex:1;border:0;background:transparent;font-family:inherit;padding:7px 3px 8px;color:#849199;font-size:12px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent}
+  .tab.active{color:var(--green);border-color:var(--green)}
+  .shopList{display:flex;flex-direction:column;gap:7px}
+  .seedCard,.buildCard{width:100%;border:1.5px solid rgba(86,106,117,.18);background:rgba(255,255,255,.9);border-radius:12px;padding:9px 10px;text-align:left;cursor:pointer;font-family:inherit;color:var(--ink);transition:transform .12s,border-color .12s,background .12s}
+  .seedCard:hover:not(:disabled),.buildCard:hover:not(:disabled){transform:translateY(-1px);border-color:#9bdcbd}.seedCard:disabled{opacity:.56;cursor:not-allowed;background:#f1f3f2}.seedCard.locked{border-style:dashed}.unlock{font-size:10px;color:#9a7a2d;margin-top:5px}.seedCard.selected{border-color:#13c96a;background:#eafaf3;box-shadow:inset 0 0 0 1px #13c96a}
+  .seedTop,.seedBottom,.buildTop{display:flex;align-items:center;justify-content:space-between;gap:8px}.seedName{font-size:12px;font-weight:700}.earn{font-size:11px;font-weight:600;color:#0eaf5c;white-space:nowrap}.cost{font-size:11px;color:#f04738}.time{font-size:11px;color:#89969b}.buildCard{cursor:pointer}.buildCard:disabled{opacity:.55;cursor:not-allowed;background:#f3f4f4}.buildName{font-size:12px;font-weight:700}.buildCost{font-size:11px;color:#e84e3f;white-space:nowrap}.buildDesc{font-size:10px;color:#88949b;margin-top:4px}
+  #instructions{position:fixed;z-index:4;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(35,66,77,.78);color:#fff;padding:9px 18px;border-radius:25px;font-size:11px;white-space:nowrap;backdrop-filter:blur(6px);box-shadow:0 4px 16px #3a718433;pointer-events:none}
+  .yellow{color:#ffdb2e;font-weight:700}#toast{position:fixed;z-index:20;left:50%;top:19px;transform:translate(-50%,-15px);opacity:0;pointer-events:none;background:rgba(31,54,65,.88);color:#fff;padding:9px 17px;border-radius:30px;font-size:13px;box-shadow:0 5px 20px #17374733;transition:opacity .2s,transform .2s;white-space:nowrap}#toast.show{opacity:1;transform:translate(-50%,0)}
+  .floatText{position:fixed;z-index:15;pointer-events:none;font-size:15px;font-weight:700;text-shadow:0 2px 4px rgba(0,0,0,.12);white-space:nowrap;transform:translate(-50%,-50%);will-change:transform,opacity}
+  #modalWrap{position:fixed;inset:0;z-index:30;display:none;place-items:center;background:rgba(14,35,42,.57);backdrop-filter:blur(5px);padding:16px}#modalWrap.open{display:grid}
+  .modal{width:min(420px,96vw);border-radius:20px;background:#fff;padding:23px 24px 20px;box-shadow:0 20px 60px rgba(0,0,0,.22);border:3px solid #3da5e7;text-align:center;animation:popIn .2s ease-out}
+  @keyframes popIn{from{transform:scale(.94);opacity:.4}to{transform:scale(1);opacity:1}}
+  .modal h2{margin:0 0 4px;color:#2085c7;font-size:21px}.modal .sub{font-size:12px;color:#8b989c;margin-bottom:16px}.question{background:#f1f3f7;border-radius:13px;padding:17px 10px;font-weight:700;font-size:25px;margin-bottom:13px;color:#2f4254;line-height:1.4}.answers{display:grid;grid-template-columns:1fr 1fr;gap:9px}.answer{border:0;border-radius:11px;background:#36a0df;color:white;box-shadow:0 3px 0 #237cb3;font:600 14px 'Kanit',sans-serif;padding:12px 6px;cursor:pointer;min-height:48px}.answer:hover:not(:disabled){filter:brightness(1.05);transform:translateY(-1px)}.answer:disabled{opacity:.65;cursor:default}.answer.correct{background:#23ba72;box-shadow:0 3px 0 #168f54}.answer.wrong{background:#ef6152;box-shadow:0 3px 0 #c53d34}.feedback{min-height:27px;margin-top:12px;font-size:13px;font-weight:600}.closeBtn{border:0;background:#f04e3c;color:#fff;border-radius:8px;font:500 12px 'Kanit',sans-serif;padding:8px 17px;cursor:pointer;margin-top:7px}
+  #loading{position:fixed;inset:0;z-index:40;background:#7bd0ee;display:grid;place-items:center;color:#234556;font-weight:600;transition:opacity .35s}.loadingCard{padding:20px 28px;border-radius:18px;background:#ffffffd9;box-shadow:0 10px 30px #16465a20;text-align:center}.spinner{width:26px;height:26px;border:3px solid #b3e5f4;border-top-color:#15bd70;border-radius:50%;margin:0 auto 10px;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+  @media(max-width:760px){#hud{top:8px;left:8px;width:170px;padding:9px;border-radius:14px}.brand{font-size:13px;margin-bottom:7px}.stat{padding:6px;min-height:43px;gap:6px;margin-bottom:5px}.statIcon{width:25px;height:25px;font-size:15px}.statLabel{font-size:9px}.statValue{font-size:13px}.sellBtn{font-size:11px;padding:8px}#shop{top:8px;right:8px;width:190px;padding:8px;max-height:55vh;border-radius:14px}.tab{font-size:10px;padding:5px 1px 6px}.seedCard,.buildCard{padding:7px}.seedName,.buildName{font-size:10px}.earn,.cost,.time,.buildCost{font-size:9px}.buildDesc{font-size:9px}#instructions{bottom:10px;font-size:9px;padding:7px 10px;max-width:94vw;white-space:normal;text-align:center}.modal{padding:18px 15px}.question{font-size:22px}}
+  @media(max-width:420px){#hud{width:142px}#shop{width:166px}.brand{font-size:11px}.statValue{font-size:12px}.statIcon{width:21px;height:21px}.seedTop{align-items:flex-start}.earn{font-size:8px}.hintTiny{font-size:9px}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud" class="panel">
+  <div class="brand"><span>🌿</span><span>Mini Farm Island</span></div>
+  <div class="stat"><div class="statIcon">🪙</div><div><span class="statLabel">เงินของคุณ</span><span class="statValue" id="moneyValue">100 เหรียญ</span></div></div>
+  <div class="stat"><div class="statIcon">📦</div><div><span class="statLabel">ผลผลิตในคลัง</span><span class="statValue" id="inventoryValue">0 ชิ้น</span></div></div>
+  <div class="stat"><div class="statIcon">🏠</div><div><span class="statLabel">ระดับบ้าน</span><span class="statValue" id="houseLevelValue">เลเวล 1/15</span></div></div>
+  <button class="sellBtn" id="sellBtn" disabled>ขายผลผลิตทั้งหมด</button>
+  <div class="hintTiny" id="sellHint">ปลูกพืชเพื่อเก็บเกี่ยว</div>
+</div>
+<div id="shop" class="panel">
+  <div class="tabs"><button class="tab active" id="seedTab">🛒 เมล็ดพันธุ์</button><button class="tab" id="buildTab">🔨 ก่อสร้าง</button></div>
+  <div id="seedList" class="shopList"></div>
+  <div id="buildList" class="shopList" style="display:none"></div>
+</div>
+<div id="instructions">เลือกเมล็ด → คลิกแปลง (ปลูกได้ 2 ชนิด) → รอให้โต → คลิกต้นที่พร้อมเพื่อ <span class="yellow">เก็บเกี่ยว</span></div>
+<div id="toast"></div>
+<div id="modalWrap" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <h2 id="modalTitle">🤖 หุ่นยนต์ช่วยรดน้ำ</h2>
+    <div class="sub" id="modalSub">เรียนรู้คำศัพท์ฟาร์มและรับบัฟรดน้ำ 10 วินาที!</div>
+    <div class="question" id="questionText">Harvest แปลว่าอะไร?</div>
+    <div class="answers" id="answerButtons"></div>
+    <div class="feedback" id="quizFeedback"></div>
+    <button class="closeBtn" id="closeModal">ปิดหน้าต่าง</button>
+  </div>
+</div>
+<div id="loading"><div class="loadingCard"><div class="spinner"></div>กำลังสร้างเกาะฟาร์ม 3D...</div></div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+let Tone = null;
+
+const $ = id => document.getElementById(id);
+const canvas = $('game');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#78ccef');
+scene.fog = new THREE.Fog('#78ccef', 48, 125);
+const camera = new THREE.PerspectiveCamera(43, innerWidth/innerHeight, 0.1, 220);
+camera.position.set(23, 26, 36);
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.14;
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.45, 2.1); controls.enableDamping = true; controls.dampingFactor=.065;
+controls.minDistance=13; controls.maxDistance=62; controls.minPolarAngle=.12; controls.maxPolarAngle=Math.PI*.48;
+controls.maxTargetRadius=12; controls.target0 = controls.target.clone();
+
+scene.add(new THREE.HemisphereLight(0xe6f8ff, 0x78934e, 2.0));
+const sun = new THREE.DirectionalLight(0xfff1d2, 3.0); sun.position.set(-7,18,11); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-30; sun.shadow.camera.right=30; sun.shadow.camera.top=30; sun.shadow.camera.bottom=-30; sun.shadow.bias=-0.00025; scene.add(sun);
+const fill = new THREE.DirectionalLight(0xb9efff, .65); fill.position.set(12,10,-9); scene.add(fill);
+const mat=(color,roughness=.88,extra={})=>new THREE.MeshStandardMaterial({color,roughness,...extra});
+const mats={grass:mat('#91ed70'),sand:mat('#ffdb8b'),sandLight:mat('#ffeaa2'),soil:mat('#704326'),wood:mat('#965a28'),woodTop:mat('#bd7b36'),leaf:mat('#23985b'),leaf2:mat('#32a566'),trunk:mat('#80502d'),stone:mat('#919b99'),stoneLight:mat('#b1b9b4'),white:mat('#f4f0df'),blue:mat('#37a9db'),dark:mat('#334955'),orange:mat('#ff861d'),red:mat('#ff4357'),cabbage:mat('#8ff0b1'),window:mat('#8de5f3',.25,{metalness:.1})};
+const GROUND=1.38;
+function mesh(geometry, material, parent=scene, x=0,y=0,z=0){const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;}
+function box(parent,x,y,z,sx,sy,sz,material){return mesh(new THREE.BoxGeometry(sx,sy,sz),material,parent,x,y,z)}
+function cylinder(parent,x,y,z,rt,rb,h,material,seg=8){return mesh(new THREE.CylinderGeometry(rt,rb,h,seg),material,parent,x,y,z)}
+function cone(parent,x,y,z,r,h,material,seg=7){return mesh(new THREE.ConeGeometry(r,h,seg),material,parent,x,y,z)}
+
+// Ocean: a gently animated, faceted water sheet.
+const waterGeo=new THREE.PlaneGeometry(220,220,88,88); waterGeo.rotateX(-Math.PI/2);
+const waterMat=new THREE.MeshStandardMaterial({color:'#59c1e9',roughness:.48,metalness:.04,flatShading:true});
+const water=new THREE.Mesh(waterGeo,waterMat); water.position.y=-.12; water.receiveShadow=true; scene.add(water);
+const waterBase=waterGeo.attributes.position.array.slice();
+// Soft translucent blue fringe below the floating island.
+const underMat=new THREE.MeshBasicMaterial({color:'#3aaad4',transparent:true,opacity:.18,depthWrite:false});
+const underside=mesh(new THREE.SphereGeometry(13.6,20,9),underMat,scene,0,-.65,0); underside.scale.y=.18; underside.castShadow=false;
+// Rounded low-poly island layers.
+cylinder(scene,0,-.5,0,12.8,11.5,1.24,mats.sand,24);
+cylinder(scene,0,.47,0,14.1,12.8,.7,mats.sandLight,24);
+cylinder(scene,0,1.1,0,15.2,14.1,.56,mats.grass,24);
+const topDisk=mesh(new THREE.CircleGeometry(15.2,48),mats.grass,scene,0,GROUND,0); topDisk.rotation.x=-Math.PI/2; topDisk.castShadow=false;
+// A few low-poly grass tufts and tiny flowers around the perimeter.
+for(let i=0;i<48;i++){
+  const a=Math.random()*Math.PI*2,r=12.0+Math.random()*2.25,x=Math.cos(a)*r,z=Math.sin(a)*r;
+  if(Math.abs(x)<4.8 && z<3.8 && z>-2.5) continue;
+  const g=new THREE.Group();g.position.set(x,GROUND+.03,z);scene.add(g);
+  for(let j=0;j<2;j++){const blade=cone(g,(Math.random()-.5)*.12,.12,(Math.random()-.5)*.12,.055,.25,mat(j?'#60ce65':'#55c75c'),4);blade.rotation.z=(Math.random()-.5)*.5;blade.castShadow=false;}
+  if(i%4===0){const f=mesh(new THREE.IcosahedronGeometry(.075,0),mat(['#fff1a5','#ffdbdb','#d9ecff'][i%3]),g,0,.19,0);f.castShadow=false;}
+}
+// Decorative rocks.
+function makeRock(x,z,s=1){const g=new THREE.Group();g.position.set(x,GROUND-.02,z);scene.add(g);const r=mesh(new THREE.DodecahedronGeometry(.47*s,0),mats.stone,g,0,.25*s,0);r.scale.set(1.25,.72,1);r.rotation.set(.1,Math.random()*2,.2);mesh(new THREE.DodecahedronGeometry(.25*s,0),mats.stoneLight,g,-.2*s,.26*s,.08*s).scale.y=.7;return g;}
+makeRock(-10.2,5.6,1.0);makeRock(9.8,6.4,1.35);makeRock(10.7,-4.2,.8);makeRock(-4.3,-10.9,.7);makeRock(2.7,12.1,.72);
+
+// Trees sway gently at the trunk base.
+const trees=[];
+function makeTree(x,z,s=1){const pivot=new THREE.Group();pivot.position.set(x,GROUND,z);scene.add(pivot);cylinder(pivot,0,.78*s,0,.27*s,.34*s,1.55*s,mats.trunk,7);
+  const f1=cone(pivot,0,1.85*s,0,1.0*s,2.35*s,mat('#22945a'),7);const f2=cone(pivot,0,2.75*s,0,.76*s,2.05*s,mat('#2da566'),7);const f3=cone(pivot,0,3.5*s,0,.5*s,1.52*s,mat('#3aa86c'),7);
+  f1.rotation.y=.2;f2.rotation.y=.4;f3.rotation.y=.15;trees.push({pivot,phase:Math.random()*Math.PI*2,baseRot:(Math.random()-.5)*.08});return pivot;}
+makeTree(-10.5,-5.0,1.12);makeTree(-9.4,3.3,.92);makeTree(10.4,-7.3,1.08);makeTree(10.8,2.4,.95);makeTree(6.2,11.1,.83);makeTree(-1.8,12.3,.9);makeTree(-12.2,.2,.88);
+
+// House, rebuilt when an upgrade is purchased.
+let houseGroup=null, chimneyPoint=new THREE.Vector3(.75,5.7,-5.25);
+function clearGroup(group){if(!group)return;scene.remove(group);group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});}
+function createHouse(level=1){clearGroup(houseGroup);houseGroup=new THREE.Group();houseGroup.position.set(0,0,-5.15);scene.add(houseGroup);
+  const w=2.75+(level-1)*.12,d=2.4+(level-1)*.085,h=2.15+(level-1)*.075;
+  const wallColors=['#e8d5b8','#ead8bd','#eadac0','#ead8c3','#e6dcc0','#d8e6d4','#d9e8ef','#e9d6ef'];
+  const wall=mat(level>=13?'#f0dfb8':wallColors[Math.min(7,Math.floor((level-1)/2))]);
+  box(houseGroup,0,GROUND+h/2,0,w,h,d,wall);
+  box(houseGroup,0,GROUND+.08,d/2+.035,w+.14,.16,d+.1,mat('#c8b79b'));
+  const roofColors=['#ff6814','#fb6b16','#287fb1','#e5a22b','#e35a8d','#45a76d','#298fb9','#8a66bf','#dd7253','#299eaa'];
+  const roofColor=level>=15?'#e7b93c':roofColors[Math.min(roofColors.length-1,Math.floor((level-1)*roofColors.length/15))];
+  const roof=cone(houseGroup,0,GROUND+h+.72+(level-1)*.018,0,2.15+(level-1)*.09,1.45+(level-1)*.025,mat(roofColor),4);roof.rotation.y=Math.PI/4;roof.scale.z=1.02;
+  // Front door, windows and trim grow with the house.
+  const front=d/2+.028;box(houseGroup,-.27,GROUND+.72,front,.58,1.34,.075,mat('#84502a'));
+  box(houseGroup,-.27,GROUND+.12,front+.045,.72,.1,.1,mat('#bf8d50'));
+  for(const wx of [-w*.31,w*.31]){box(houseGroup,wx,GROUND+1.48,front,.46,.52,.06,mat('#75d9f0',.28,{metalness:.1}));box(houseGroup,wx,GROUND+1.48,front+.04,.055,.58,.04,mat('#f4e9d2'));box(houseGroup,wx,GROUND+1.48,front+.04,.5,.05,.04,mat('#f4e9d2'));}
+  // The chimney stays aligned with the changing roof height, keeping smoke attached.
+  const cx=w*.3,cz=-d*.18,cy=GROUND+h+1.14+(level-1)*.018;
+  box(houseGroup,cx,cy,cz,.43+(level-1)*.012,.85+(level-1)*.02,.43,mat('#858b88'));
+  box(houseGroup,cx,cy+.45,cz,.53,.12,.53,mat('#626c6e'));
+  chimneyPoint.set(cx,cy+.49,-5.15+cz);
+  if(level>=2){const wingX=-w*.48;box(houseGroup,wingX,GROUND+.68,d*.1,1.1+(level-2)*.035,1.36,1.25,mat('#dfc9a8'));const wingRoof=cone(houseGroup,wingX,GROUND+1.75,d*.1,.95+(level-2)*.02,.8,mat(roofColor),4);wingRoof.rotation.y=Math.PI/4;}
+  if(level>=3){const porchZ=d/2+.55;box(houseGroup,0,GROUND+.12,porchZ,w*.64,.15,.95,mat('#b8864b'));for(const px of [-w*.28,w*.28])box(houseGroup,px,GROUND+.75,porchZ+.3,.11,1.25,.11,mat('#f5ead5'));}
+  if(level>=4){const upperY=GROUND+h-.48;for(const wx of [-w*.25,w*.25]){box(houseGroup,wx,upperY,front+.005,.48,.42,.07,mat('#75d9f0',.25));box(houseGroup,wx,upperY,front+.05,.06,.48,.045,mat('#f7eddb'));box(houseGroup,wx,upperY,front+.05,.52,.055,.045,mat('#f7eddb'));}}
+  if(level>=7){const balconyZ=front+.36;box(houseGroup,0,GROUND+h-.72,balconyZ,w*.78,.12,.65,mat('#b8864b'));box(houseGroup,0,GROUND+h-.34,balconyZ+.27,w*.78,.07,.07,mat('#f5ead5'));for(const px of [-w*.34,-w*.17,0,w*.17,w*.34])box(houseGroup,px,GROUND+h-.51,balconyZ+.27,.055,.35,.055,mat('#f5ead5'));}
+  if(level>=10){for(const sx of [-1,1]){const planter=box(houseGroup,sx*w*.39,GROUND+.24,front+.28,.48,.27,.36,mat('#a86b42'));for(let k=0;k<3;k++){const bloom=mesh(new THREE.IcosahedronGeometry(.12,0),mat(k%2?'#ffb8cf':'#fff09a'),houseGroup,sx*w*.39+(k-1)*.13,GROUND+.48,front+.28);bloom.castShadow=false;}}}
+  if(level>=13){cylinder(houseGroup,w*.34,GROUND+h+1.48,0,.045,.045,.95,mat('#f5ead5'),6);const flag=box(houseGroup,w*.34+.27,GROUND+h+1.72,0,.54,.3,.045,mat(level>=15?'#e7b93c':'#f25d69'));flag.rotation.y=.12;}
+  if(level>=15){mesh(new THREE.OctahedronGeometry(.23,0),mat('#fff0a0',.3,{metalness:.22}),houseGroup,0,GROUND+h+2.02,0);}
+  houseGroup.userData.level=level;
+}
+createHouse(1);
+
+// Well and tiny red roof.
+const well=new THREE.Group();well.position.set(-4.5,0,-1.35);scene.add(well);
+cylinder(well,0,GROUND+.32,0,.63,.67,.64,mat('#969f9e'),12);
+cylinder(well,0,GROUND+.59,0,.48,.48,.09,mat('#43b9e9'),16);
+cylinder(well,0,GROUND+.68,0,.5,.5,.1,mat('#6d7777'),12);
+for(const px of [-.42,.42])box(well,px,GROUND+1.25,0,.12,1.1,.12,mats.wood);
+const wellRoof=cone(well,0,GROUND+1.95,0,.92,.75,mat('#ff493a'),4);wellRoof.rotation.y=Math.PI/4;
+box(well,0,GROUND+1.52,.0,.1,.13,.92,mats.wood);
+
+// Robot: its mesh parts and a canvas billboard are clickable.
+const robotRoot=new THREE.Group();robotRoot.position.set(-4.45,0,.58);scene.add(robotRoot);
+const robotBody=new THREE.Group();robotRoot.add(robotBody);
+const robotWhite=mat('#e8e6dc'),robotBlue=mat('#329bd2'),robotGold=mat('#ffcf36'),robotDark=mat('#314454');
+box(robotBody,0,GROUND+.92,0,.68,.95,.47,robotWhite);
+box(robotBody,0,GROUND+.42,.035,.72,.19,.5,robotBlue);
+for(const lx of [-.2,.2]){box(robotBody,lx,GROUND+.19,.04,.2,.32,.25,robotBlue);box(robotBody,lx,GROUND+.045,.12,.27,.09,.32,robotDark);}
+const head=mesh(new THREE.BoxGeometry(.64,.48,.5),robotWhite,robotBody,0,GROUND+1.68,0);
+box(robotBody,0,GROUND+1.36,.254,.32,.07,.035,robotDark);
+for(const ex of [-.16,.16]){mesh(new THREE.SphereGeometry(.07,8,6),robotGold,robotBody,ex,GROUND+1.73,.263);}
+for(const ax of [-1,1]){const arm=box(robotBody,ax*.47,GROUND+1.0,0,.18,.57,.2,robotWhite);arm.rotation.z=ax*.24;mesh(new THREE.SphereGeometry(.12,7,5),robotBlue,robotBody,ax*.52,GROUND+.69,0);}
+mesh(new THREE.SphereGeometry(.09,8,6),robotBlue,robotBody,0,GROUND+2.03,0);
+const robotHit=mesh(new THREE.CylinderGeometry(.72,.72,2.4,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),robotRoot,0,GROUND+1.05,0);robotHit.castShadow=false;
+// Billboard is a canvas-backed THREE.Sprite, always facing the camera.
+const signCanvas=document.createElement('canvas');signCanvas.width=512;signCanvas.height=150;const signCtx=signCanvas.getContext('2d');
+const signTex=new THREE.CanvasTexture(signCanvas);signTex.colorSpace=THREE.SRGBColorSpace;
+const signSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:signTex,transparent:true,depthTest:true}));signSprite.scale.set(2.0,.58,1);signSprite.position.set(-4.45,GROUND+3.05,.58);scene.add(signSprite);
+let robotSignMode='quiz';
+function updateRobotSign(text,mode='quiz'){
+  robotSignMode=mode;signCtx.clearRect(0,0,512,150);signCtx.fillStyle=mode==='buff'?'#0ba95c':mode==='broken'?'#e5483f':'#283c4c';
+  const rr=25;signCtx.beginPath();signCtx.moveTo(rr,8);signCtx.arcTo(504,8,504,142,rr);signCtx.arcTo(504,142,8,142,rr);signCtx.arcTo(8,142,8,8,rr);signCtx.arcTo(8,8,504,8,rr);signCtx.closePath();signCtx.fill();signCtx.lineWidth=8;signCtx.strokeStyle='#f5c62c';signCtx.stroke();
+  signCtx.font='bold 52px Kanit, sans-serif';signCtx.textAlign='center';signCtx.textBaseline='middle';signCtx.fillStyle='#fff';signCtx.fillText(text,256,77);signTex.needsUpdate=true;
+}
+updateRobotSign('QUIZ 🤖','quiz');
+
+// 31 crops: three starter crops, then exactly two new crops for every house level 2–15.
+const cropRows=[
+ ['tomato','มะเขือเทศ','🍅',10,25,5,'#ff4355','#2da761','tomato',1],
+ ['carrot','แครอท','🥕',20,60,8,'#ff8c29','#2da761','carrot',1],
+ ['cabbage','กะหล่ำปลี','🥬',50,200,12,'#96efb1','#66ce80','cabbage',1],
+ ['strawberry','สตรอว์เบอร์รี','🍓',25,75,7,'#f34872','#329b4c','berry',2],
+ ['watermelon','แตงโม','🍉',45,120,10,'#45bb5b','#2b9850','melon',2],
+ ['corn','ข้าวโพด','🌽',65,170,13,'#f5c83c','#339e4e','corn',3],
+ ['pumpkin','ฟักทอง','🎃',75,210,14,'#ff9634','#398f43','pumpkin',3],
+ ['eggplant','มะเขือม่วง','🍆',85,250,15,'#8f58c7','#459b53','eggplant',4],
+ ['cucumber','แตงกวา','🥒',90,260,16,'#3ea95d','#247c47','cucumber',4],
+ ['banana','กล้วย','🍌',110,300,18,'#f5d64b','#398b43','banana',5],
+ ['apple','แอปเปิล','🍎',120,340,19,'#e9434a','#398f43','apple',5],
+ ['grapes','องุ่น','🍇',135,390,20,'#9c5bdd','#358a48','grapes',6],
+ ['pineapple','สับปะรด','🍍',150,450,22,'#e7b33d','#348c43','pineapple',6],
+ ['chili','พริก','🌶️',165,490,22,'#eb4b38','#388f46','chili',7],
+ ['onion','หอมหัวใหญ่','🧅',180,540,24,'#c895d7','#438f4b','onion',7],
+ ['potato','มันฝรั่ง','🥔',200,600,25,'#bd925a','#4a984e','potato',8],
+ ['beet','บีตรูต','🫜',220,650,26,'#bb376e','#368d4c','beet',8],
+ ['broccoli','บรอกโคลี','🥦',240,720,28,'#36a95b','#257e43','broccoli',9],
+ ['pepper','พริกหวาน','🫑',260,780,29,'#e64c43','#2f8f48','pepper',9],
+ ['lemon','เลมอน','🍋',280,840,30,'#f4d83c','#418f43','lemon',10],
+ ['orange','ส้ม','🍊',300,900,31,'#ff982e','#438f43','orange',10],
+ ['peach','พีช','🍑',330,990,33,'#ff9f8b','#438d49','peach',11],
+ ['pear','ลูกแพร์','🍐',350,1050,34,'#b9d84b','#408c47','pear',11],
+ ['blueberry','บลูเบอร์รี','🫐',380,1140,36,'#526ec9','#438f43','blueberry',12],
+ ['cherry','เชอร์รี','🍒',410,1230,37,'#cf2747','#438f43','cherry',12],
+ ['mushroom','เห็ด','🍄',440,1320,39,'#e76a56','#b88956','mushroom',13],
+ ['garlic','กระเทียม','🧄',470,1410,40,'#ece6d8','#438f43','garlic',13],
+ ['rice','ข้าว','🌾',500,1500,42,'#e2c967','#51994c','rice',14],
+ ['coffee','กาแฟ','☕',540,1620,44,'#8a5638','#2c8748','coffee',14],
+ ['mango','มะม่วง','🥭',580,1740,46,'#f1a83a','#3e9849','mango',15],
+ ['kiwi','กีวี','🥝',620,1860,48,'#8b9e43','#478b45','kiwi',15]
+];
+const crops=Object.fromEntries(cropRows.map(([key,name,emoji,cost,sell,grow,color,leafColor,shape,unlockLevel])=>[key,{name,emoji,cost,sell,grow,color,leafColor,shape,unlockLevel}]));
+let selectedCrop='tomato',money=100,unlockedPlots=6,houseLevel=1;
+const inventory=Object.fromEntries(Object.keys(crops).map(key=>[key,0]));
+const plots=[];const raycaster=new THREE.Raycaster();const pointer=new THREE.Vector2();let pointerStart=null;
+function drawProgress(slot){const c=slot.barCanvas,ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='rgba(31,45,48,.9)';ctx.fillRect(3,12,c.width-6,c.height-24);ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=3;ctx.strokeRect(3,12,c.width-6,c.height-24);ctx.fillStyle='#22d176';ctx.fillRect(7,16,Math.max(0,(c.width-14)*slot.growth),c.height-32);slot.barTexture.needsUpdate=true;}
+// 46 plots in a compact 5-column layout. Each plot has two independent planting slots.
+const PLOT_COLS=5,PLOT_ROWS=10,MAX_PLOTS=46;
+function plotGridPosition(i){let row,col;if(i<3){row=0;col=i+1;}else if(i<6){row=1;col=i-2;}else if(i<8){row=1;col=i===6?0:4;}else if(i<43){const k=i-8;row=2+Math.floor(k/PLOT_COLS);col=k%PLOT_COLS;}else{row=9;col=i-42;}return {row,col,x:-3.3+col*1.65,z:.4+row*1.25};}
+function makePlot(i){const {row,col,x,z}=plotGridPosition(i);
+  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+  const frame=box(g,0,GROUND+.075,0,1.58,.15,1.12,mats.woodTop);frame.userData.action='plot';frame.userData.plotIndex=i;
+  const soil=box(g,0,GROUND+.145,0,1.42,.055,.94,mats.soil);soil.userData.action='plot';soil.userData.plotIndex=i;
+  for(let k=-1;k<=1;k++){const ridge=box(g,0,GROUND+.178,k*.28,1.26,.012,.022,mat('#845333'));ridge.castShadow=false;ridge.userData.action='plot';ridge.userData.plotIndex=i;}
+  const p={index:i,x,z,row,col,group:g,soil,frame,unlocked:i<6,slots:[]};
+  for(let slotIndex=0;slotIndex<2;slotIndex++){
+    const offsetX=slotIndex===0?-.37:.37,slotX=x+offsetX;
+    const barCanvas=document.createElement('canvas');barCanvas.width=256;barCanvas.height=60;const barTexture=new THREE.CanvasTexture(barCanvas);barTexture.colorSpace=THREE.SRGBColorSpace;
+    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:barTexture,transparent:true,depthTest:true}));sprite.scale.set(.78,.22,1);sprite.position.set(slotX,GROUND+1.48,z);sprite.visible=false;scene.add(sprite);
+    p.slots.push({index:i*2+slotIndex,plotIndex:i,slotIndex,offsetX,x:slotX,z,plot:p,plant:null,crop:null,growth:0,ripe:false,plantAge:0,matureAge:0,barCanvas,barTexture,sprite,barClock:0});
+  }
+  if(!p.unlocked)g.visible=false;plots.push(p);return p;
+}
+for(let i=0;i<MAX_PLOTS;i++)makePlot(i);
+function tagPlotMeshes(plot){plot.group.traverse(o=>{if(o.isMesh){o.userData.action='plot';o.userData.plotIndex=plot.index;}})}
+plots.forEach(tagPlotMeshes);
+function attachCropAction(group,plot,slotIndex){group.traverse(o=>{if(o.isMesh){o.userData.action='crop';o.userData.plotIndex=plot.index;o.userData.slotIndex=slotIndex;}})}
+function createCropModel(type,plot,slotIndex=0){
+  const c=crops[type],root=new THREE.Group();
+  root.position.set(plot.slots?.[slotIndex]?.x ?? plot.x,GROUND+.12,plot.z);
+  root.userData.cropParts=[];
+  const fruit=mat(c.color),leaf=mat(c.leafColor||'#2da761'),stem=mat('#387d43'),darkLeaf=mat('#247948'),detail=mat('#f7d978');
+  const register=(o,kind='produce',delay)=>{o.userData.cropPartKind=kind;o.userData.cropPartDelay=delay===undefined?Math.random()*.14:delay;root.userData.cropParts.push(o);return o;};
+  const sphere=(x,y,z,sx,sy,sz,m=fruit,detailLevel=8,kind='produce',delay)=>{const o=mesh(new THREE.SphereGeometry(1,detailLevel,Math.max(4,detailLevel-2)),m,root,x,y,z);o.scale.set(sx,sy,sz);return register(o,kind,delay);};
+  const twig=(x,y,z,height=.42,r=.026,m=stem)=>register(cylinder(root,x,y,z,r,r*.76,height,m,6),'stem');
+  const tube=(points,radius,m=fruit,kind='produce',segments=10)=>{const curve=new THREE.CatmullRomCurve3(points.map(v=>new THREE.Vector3(v[0],v[1],v[2])));return register(mesh(new THREE.TubeGeometry(curve,segments,radius,5,false),m,root),'produce'===kind?'produce':kind);};
+  const conePart=(x,y,z,r,h,m=fruit,segments=7,kind='produce')=>register(cone(root,x,y,z,r,h,m,segments),kind);
+  const boxPart=(x,y,z,sx,sy,sz,m=detail,kind='detail')=>register(box(root,x,y,z,sx,sy,sz,m),kind);
+  const leafBlade=(x,y,z,sx=.13,sy=.32,sz=.055,rot=0,m=leaf)=>{const o=mesh(new THREE.SphereGeometry(1,7,5),m,root,x,y,z);o.scale.set(sx,sy,sz);o.rotation.z=rot;return register(o,'leaf');};
+  const crownLeaves=(count=5,y=.72,r=.20)=>{for(let j=0;j<count;j++){const a=j*Math.PI*2/count;const l=leafBlade(Math.cos(a)*r*.52,y,Math.sin(a)*r*.52,.075,.29,.045,Math.cos(a)*.65);l.rotation.x=Math.sin(a)*.5;l.rotation.y=a;}};
+  const surfaceDots=(rx,ry,rz,count,colorHex,size=.018)=>{const dotMat=mat(colorHex);for(let j=0;j<count;j++){const a=j*2.399,yy=.42+((j%4)-1.5)*.045;const x=Math.cos(a)*rx*(.55+(j%3)*.15),z=Math.sin(a)*rz*(.55+(j%2)*.2);sphere(x,yy+ry*.18,z,size,size,size,dotMat,5,'detail',.12+(j%5)*.04);}};
+  const torusPart=(x,y,z,r,tubeRadius,m=detail,kind='detail',radial=5,tubular=14)=>register(mesh(new THREE.TorusGeometry(r,tubeRadius,radial,tubular),m,root,x,y,z),kind);
+  const lathePart=(profile,m=fruit,kind='produce',segments=9)=>register(mesh(new THREE.LatheGeometry(profile.map(v=>new THREE.Vector2(v[0],v[1])),segments),m,root),'produce'===kind?'produce':kind);
+
+  switch(c.shape){
+    case 'tomato': {
+      twig(0,.38,0,.50,.028);crownLeaves(5,.49,.28);
+      for(const [x,y,z,s] of [[-.15,.48,.01,.16],[.15,.49,-.02,.16],[.01,.62,.09,.17]]){
+        sphere(x,y,z,s,s*.94,s,fruit,8,'produce');
+        twig(x,y+.10,z,.09,.012,stem);
+        for(let k=0;k<5;k++){const a=k*Math.PI*2/5;leafBlade(x+Math.cos(a)*.045,y+s*.75,z+Math.sin(a)*.045,.028,.075,.022,.25,leaf);}
+      }break;}
+    case 'carrot': {
+      const r=conePart(0,.39,0,.25,.68,fruit,7,'root');r.rotation.z=Math.PI;
+      for(let j=0;j<3;j++)boxPart(0,.25+j*.12,.125,.13-j*.025,.012,.008,mat('#e87922'),'detail');
+      for(let j=0;j<6;j++){const a=j*Math.PI/3;const l=leafBlade(Math.cos(a)*.13,.72+(j%2)*.06,Math.sin(a)*.13,.055,.30,.035,Math.cos(a)*.5);l.rotation.x=Math.sin(a)*.5;}break;}
+    case 'cabbage': {
+      sphere(0,.48,0,.32,.30,.31,fruit,7,'produce',.06);
+      for(let j=0;j<10;j++){const a=j*Math.PI*2/10;const s=.15+(j%3)*.015;sphere(Math.cos(a)*.21,.39+(j%2)*.03,Math.sin(a)*.21,s,.20,s,mat(j%2?'#7ee5a0':c.color),6,'leaf',j*.012);}
+      for(let j=0;j<6;j++){const a=j*Math.PI/3;const l=leafBlade(Math.cos(a)*.23,.28,Math.sin(a)*.23,.12,.23,.06,Math.cos(a)*.55);l.rotation.x=Math.sin(a)*.25;}break;}
+    case 'berry': {
+      // Strawberry: broad shoulders, a pointed bottom, visible seeds and a leafy crown.
+      const body=conePart(0,.425,0,.225,.47,fruit,9,'produce');body.rotation.z=Math.PI;
+      sphere(0,.535,0,.19,.12,.18,fruit,8,'produce',.04);
+      const seedMat=mat('#ffe89a');
+      for(let row=0;row<4;row++){
+        const y=.30+row*.075, t=(y-.19)/.47, ringR=.205*Math.max(.18,t);
+        const count=row===0?5:8;
+        for(let k=0;k<count;k++){const a=k*Math.PI*2/count+(row%2)*.22;const x=Math.cos(a)*ringR,z=Math.sin(a)*ringR;
+          sphere(x,y,z,.010,.016,.010,seedMat,5,'detail',.30+row*.025);}
+      }
+      twig(0,.675,0,.12,.017,stem);
+      for(let j=0;j<6;j++){const a=j*Math.PI/3;const l=leafBlade(Math.cos(a)*.10,.645,Math.sin(a)*.10,.045,.13,.025,Math.cos(a)*.42,darkLeaf);l.rotation.x=Math.sin(a)*.35;}
+      break;}
+    case 'melon': {
+      // Watermelon silhouette with curved longitudinal stripes, not flat floating bars.
+      sphere(0,.435,0,.405,.285,.345,fruit,10,'produce',.04);
+      const stripeMats=[mat('#287b3d'),mat('#3f9b4b')];
+      for(let j=0;j<9;j++){
+        const a=j*Math.PI*2/9;
+        const pts=[];
+        for(let k=0;k<=12;k++){const u=-.91+k*(1.82/12),q=Math.sqrt(Math.max(.06,1-u*u));
+          pts.push([Math.cos(a)*(.405*q+.008),.435+u*.285,Math.sin(a)*(.345*q+.008)]);}
+        tube(pts,.012,stripeMats[j%2],'detail',16);
+      }
+      sphere(0,.718,0,.055,.035,.055,mat('#527b32'),6,'detail');
+      tube([[0,.72,0],[.09,.76,.015],[.16,.73,.045]],.012,stem,'stem',8);
+      leafBlade(.15,.72,.015,.12,.18,.035,.82,darkLeaf);
+      break;}
+    case 'corn': {
+      // Tall stalk, broad husk leaves and rows of kernels on a tapered ear.
+      twig(0,.47,0,.91,.034,mat('#5c9c3b'));
+      for(let j=0;j<6;j++){const a=j*Math.PI/3;const l=leafBlade(Math.cos(a)*.14,.28+(j%3)*.095,Math.sin(a)*.12,.065,.42,.035,Math.cos(a)*.72,mat(j%2?'#3e9a49':'#58b354'));l.rotation.x=Math.sin(a)*.55;}
+      const cob=sphere(.04,.49,.13,.125,.32,.112,mat('#f8d64b'),8,'produce',.24);cob.rotation.z=-.08;
+      // Husk wraps the lower sides of the ear.
+      for(const side of [-1,1]){const h=leafBlade(.04+side*.105,.40,.135,.065,.28,.035,side*.34,mat('#4c9b43'));h.rotation.x=side*.15;}
+      const kernelMats=[mat('#ffdf57'),mat('#efbb2c'),mat('#ffe987')];
+      for(let row=0;row<8;row++)for(let col=0;col<5;col++){
+        const a=-1.1+col*.55,y=.265+row*.058;
+        const x=.04+Math.sin(a)*.112,z=.13+Math.cos(a)*.104;
+        sphere(x,y,z,.021,.025,.019,kernelMats[(row+col)%3],5,'detail',.34+row*.015);
+      }
+      for(let j=0;j<3;j++)leafBlade((j-1)*.05,.86,.11,.04,.18,.025,(j-1)*.28,darkLeaf);
+      break;}
+    case 'pumpkin': {
+      // Squat ribbed pumpkin with a stubby stem and a creeping vine.
+      sphere(0,.405,0,.345,.265,.33,fruit,9,'produce',.05);
+      for(let j=0;j<9;j++){const a=j*Math.PI*2/9;const lobe=sphere(Math.cos(a)*.225,.405,Math.sin(a)*.225,.12,.255,.115,mat(j%2?'#fca33b':c.color),7,'produce',.09+j*.008);lobe.rotation.z=Math.cos(a)*.08;}
+      twig(0,.68,0,.15,.036,mat('#587a32'));
+      sphere(0,.755,0,.055,.035,.055,mat('#608638'),6,'detail');
+      tube([[.02,.66,0],[.18,.68,.04],[.27,.62,.10],[.33,.65,.14]],.016,mat('#408b42'),'stem',10);
+      for(const side of [-1,1]){const l=leafBlade(side*.23,.65,.08,.10,.17,.035,side*.65,darkLeaf);l.rotation.x=side*.3;}
+      break;}
+    case 'eggplant': {
+      // Long, slightly curved teardrop body and a clearly visible green calyx.
+      const body=lathePart([[.025,-.30],[.075,-.26],[.135,-.16],[.18,-.02],[.185,.09],[.145,.21],[.075,.29],[.045,.31]],fruit,'produce',9);
+      body.position.set(.015,.47,0);body.rotation.z=-.20;
+      twig(0,.755,0,.14,.02,stem);
+      sphere(0,.70,0,.075,.045,.075,darkLeaf,6,'leaf');
+      for(let j=0;j<5;j++){const a=j*Math.PI*2/5;const l=leafBlade(Math.cos(a)*.075,.70,Math.sin(a)*.075,.042,.145,.027,Math.cos(a)*.55,darkLeaf);l.rotation.x=Math.sin(a)*.28;}
+      break;}
+    case 'cucumber': {
+      // Long green cucumber with blunt ends, pale bumps and subtle lengthwise ridges.
+      const body=sphere(0,.415,0,.36,.125,.14,fruit,9,'produce',.12);body.rotation.z=.025;
+      sphere(-.345,.415,0,.045,.095,.09,mat('#3d8140'),7,'produce',.16);
+      sphere(.345,.415,0,.035,.075,.07,mat('#4a9b48'),7,'produce',.18);
+      const ridgeM=mat('#76b84e');
+      for(let j=0;j<7;j++){const a=j*Math.PI*2/7;const pts=[];for(let k=0;k<=8;k++){const u=-.88+k*.22;const q=Math.sqrt(Math.max(.08,1-u*u));pts.push([u*.36,.415+Math.sin(a)*.122*q,Math.cos(a)*.138*q]);}tube(pts,.006,ridgeM,'detail',10);}
+      for(let j=0;j<24;j++){const x=-.28+(j%6)*.105,y=.415+(Math.floor(j/6)-1.5)*.045,z=.125*Math.sqrt(Math.max(.15,1-(x/.38)**2));sphere(x,y,z,.012,.016,.010,mat('#c1e67b'),5,'detail',.35+(j%4)*.02);}
+      twig(-.35,.43,0,.10,.013,stem);tube([[.31,.43,0],[.38,.49,.03],[.45,.47,.08]],.012,stem,'stem',7);leafBlade(.28,.62,.03,.09,.17,.03,.72,darkLeaf);
+      break;}
+    case 'banana': {
+      // A small bunch of curved yellow bananas with dark tips and a shared crown.
+      twig(0,.77,0,.18,.027,mat('#77502e'));
+      const bunch=[
+        {dx:-.11,dz:-.07,r:.052,c:'#f6d54a'},
+        {dx:.00,dz:.04,r:.056,c:'#ffe45a'},
+        {dx:.12,dz:-.035,r:.052,c:'#f6cf35'},
+        {dx:.015,dz:.13,r:.047,c:'#f8dc4c'}
+      ];
+      for(const b of bunch){
+        const x=b.dx,z=b.dz;
+        tube([[x*.45,.70,z],[x-.09,.61,z],[x-.10,.46,z+.015],[x-.035,.335,z+.025],[x+.065,.35,z+.02]],b.r,mat(b.c),'produce',14);
+        sphere(x+.065,.35,z+.02,.022,.025,.022,mat('#57452b'),5,'detail',.28);
+        sphere(x*.45,.70,z,.024,.025,.024,mat('#57452b'),5,'detail',.26);
+      }
+      for(const side of [-1,1]){const l=leafBlade(side*.17,.73,-.02,.055,.30,.03,side*.33,mat('#3b8841'));l.rotation.x=side*.35;}
+      leafBlade(.02,.82,.02,.06,.22,.03,.12,darkLeaf);
+      break;}
+    case 'apple': {
+      // Rounded apple with shoulders, a small top dimple, stem and leaf.
+      sphere(0,.445,0,.265,.265,.245,fruit,9,'produce',.04);
+      for(let j=0;j<5;j++){const a=j*Math.PI*2/5;const lobe=sphere(Math.cos(a)*.105,.555,Math.sin(a)*.095,.105,.14,.10,fruit,7,'produce',.10+j*.012);lobe.rotation.z=Math.cos(a)*.12;}
+      sphere(0,.695,0,.073,.024,.067,mat('#69452a'),6,'detail',.25);
+      twig(0,.755,0,.13,.019,mat('#76502d'));
+      leafBlade(.12,.765,0,.095,.19,.035,.72,mat('#388846'));
+      sphere(.07,.47,.225,.055,.12,.018,mat('#ff9b62'),7,'detail',.34);
+      break;}
+    case 'grapes': {
+      // Individual grape spheres arranged in a tapered bunch, with branching stem and vine leaf.
+      twig(0,.79,0,.18,.018,mat('#805331'));
+      tube([[0,.78,0],[-.09,.70,.02],[-.13,.61,.02]],.014,stem,'stem',8);
+      tube([[0,.77,0],[.10,.69,-.01],[.13,.61,.015]],.014,stem,'stem',8);
+      leafBlade(-.16,.755,0,.13,.22,.035,.62,mat('#3d8b43'));
+      leafBlade(.15,.74,-.015,.12,.21,.035,-.55,mat('#2f7f3d'));
+      const rows=[[-.09,0,.073],[ -.15,-.065,.073],[-.05,-.065,.073],[.05,-.065,.073],[.15,-.065,.073],[-.105,-.19,.071],[0,-.19,.074],[.105,-.19,.071],[-.06,-.31,.066],[.06,-.31,.066],[0,-.42,.058]];
+      for(let j=0;j<rows.length;j++){const [x,dy,r]=rows[j];sphere(x,.60+dy,(j%2)*.035,r,r*1.02,r,fruit,7,'produce',.18+(j%5)*.025);}
+      break;}
+    case 'pineapple': {
+      // Oval golden fruit with a diamond-like textured rind and spiky leaf crown.
+      sphere(0,.435,0,.235,.325,.215,fruit,8,'produce',.08);
+      const scaleMats=[mat('#d7a536'),mat('#f4c14a'),mat('#b98528')];
+      for(let row=0;row<6;row++){
+        const y=.20+row*.085,dy=(y-.435)/.34,rf=Math.sqrt(Math.max(.12,1-dy*dy)),count= Math.max(4,Math.round(7*rf));
+        for(let j=0;j<count;j++){const a=(j+(row%2)*.5)*Math.PI*2/count;const x=Math.cos(a)*(.233*rf),z=Math.sin(a)*(.213*rf);
+          const scale=mesh(new THREE.OctahedronGeometry(.031,0),scaleMats[(j+row)%3],root,x,y,z);scale.scale.set(.9,1.15,.55);scale.rotation.y=a;register(scale,'detail',.30+(row%3)*.035);}
+      }
+      for(let j=0;j<9;j++){const a=j*Math.PI*2/9;const l=leafBlade(Math.cos(a)*.055,.75+(j%3)*.025,Math.sin(a)*.055,.045,.31+(j%2)*.04,.03,Math.cos(a)*.32,mat(j%2?'#287b3e':'#3b9a4a'));l.rotation.x=Math.sin(a)*.28;}
+      for(let j=0;j<3;j++){const l=leafBlade((j-1)*.025,.91,.01,.035,.25,.025,(j-1)*.18,darkLeaf);}
+      break;}
+    case 'chili': {
+      // Curved tapered chilli pepper, green cap and pointed end.
+      tube([[0,.70,0],[.10,.62,.005],[.14,.49,.02],[.12,.36,.035],[.025,.22,.045]],.055,fruit,'produce',14);
+      const tip=conePart(.015,.205,.045,.045,.13,fruit,7,'produce');tip.rotation.z=Math.PI-.2;
+      twig(-.015,.735,0,.15,.018,mat('#4b8033'));
+      for(let j=0;j<5;j++){const a=j*Math.PI*2/5;const l=leafBlade(Math.cos(a)*.045,.72,Math.sin(a)*.045,.027,.095,.02,Math.cos(a)*.5,darkLeaf);l.rotation.x=Math.sin(a)*.3;}
+      leafBlade(-.11,.72,.01,.075,.15,.028,-.55,leaf);
+      break;}
+    case 'onion': {
+      // Bulb onion with papery vertical layers and a dried root tuft.
+      sphere(0,.405,0,.245,.255,.225,fruit,9,'root',.12);
+      const skin=mat('#f0d9df');
+      for(let j=0;j<6;j++){const a=j*Math.PI/3;const pts=[];for(let k=0;k<=7;k++){const t=k/7;const y=.23+t*.36;const r=.20*Math.sin(Math.PI*(.10+t*.82));pts.push([Math.cos(a)*r,y,Math.sin(a)*r]);}tube(pts,.008,j%2?skin:mat('#c98bb1'),'detail',8);}
+      conePart(0,.63,0,.065,.12,mat('#cbb2a1'),6,'detail');
+      for(let j=0;j<4;j++){const a=j*Math.PI/2;const l=leafBlade(Math.cos(a)*.055,.72+(j%2)*.04,Math.sin(a)*.055,.04,.27,.027,Math.cos(a)*.22,darkLeaf);l.rotation.x=Math.sin(a)*.2;}
+      for(let j=0;j<4;j++){const a=j*Math.PI/2;tube([[Math.cos(a)*.04,.22,Math.sin(a)*.04],[Math.cos(a)*.06,.15,Math.sin(a)*.06],[Math.cos(a)*.03,.10,Math.sin(a)*.03]],.006,mat('#8d6d5b'),'detail',5);}
+      break;}
+    case 'potato': {
+      // Irregular earthy tuber, visible potato eyes and two small shoots.
+      const tuber=sphere(0,.355,0,.30,.205,.245,fruit,8,'root',.10);tuber.rotation.z=-.13;
+      const eyeMat=mat('#735338');
+      const eyes=[[-.19,.39,.11],[.12,.44,.19],[.22,.34,.06],[-.08,.28,.21],[.02,.47,-.12],[-.20,.34,-.06],[.12,.27,-.08]];
+      for(let j=0;j<eyes.length;j++){const [x,y,z]=eyes[j];sphere(x,y,z,.018,.014,.014,eyeMat,5,'detail',.34+(j%3)*.025);}
+      tube([[-.10,.48,.02],[-.15,.56,.02],[-.12,.62,.025]],.013,mat('#6a9f45'),'stem',6);
+      tube([[.12,.48,.04],[.18,.55,.045],[.23,.59,.05]],.012,mat('#75a94b'),'stem',6);
+      leafBlade(-.13,.65,.02,.055,.14,.027,-.5,darkLeaf);leafBlade(.23,.62,.05,.05,.13,.025,.55,leaf);
+      break;}
+    case 'beet': {
+      // Deep magenta beetroot with a pointed taproot, red veins and leafy tops.
+      sphere(0,.425,0,.255,.26,.235,fruit,8,'root',.12);
+      const tail=conePart(0,.205,0,.105,.29,fruit,8,'root');tail.rotation.z=Math.PI;
+      for(let j=0;j<5;j++){const a=j*Math.PI*2/5;const l=leafBlade(Math.cos(a)*.13,.68+(j%2)*.06,Math.sin(a)*.10,.06,.29,.034,Math.cos(a)*.48,darkLeaf);l.rotation.x=Math.sin(a)*.26;
+        tube([[0,.47,.20],[Math.cos(a)*.07,.54,.19],[Math.cos(a)*.13,.67,.14]],.006,mat('#a84a65'),'detail',7);}
+      break;}
+    case 'broccoli': {
+      // Thick pale stalk supports a dense, bumpy dome of small green florets.
+      twig(0,.36,0,.52,.075,mat('#85bd76'));
+      for(let j=0;j<5;j++){const a=j*Math.PI*2/5;const l=leafBlade(Math.cos(a)*.22,.29,Math.sin(a)*.20,.10,.22,.045,Math.cos(a)*.62,mat('#4f9a4b'));l.rotation.x=Math.sin(a)*.25;}
+      for(let j=0;j<24;j++){const a=j*2.399,r=.05+(j%5)*.045,y=.60+Math.sqrt(Math.max(.04,1-(r/.30)**2))*.14;
+        sphere(Math.cos(a)*r,y,Math.sin(a)*r,.075+(j%3)*.012,.075+(j%2)*.015,.072,mat(['#26883e','#359c4c','#4caf57'][j%3]),6,'produce',.16+(j%5)*.027);}
+      break;}
+    case 'pepper': {
+      // Bell pepper made of four distinct lobes, with a star-shaped calyx and stem.
+      sphere(0,.425,0,.225,.255,.205,fruit,8,'produce',.10);
+      for(let j=0;j<4;j++){const a=j*Math.PI/2;const lobe=sphere(Math.cos(a)*.105,.405,Math.sin(a)*.09,.115,.225,.105,fruit,7,'produce',.15+j*.012);lobe.rotation.z=Math.cos(a)*.10;}
+      for(let j=0;j<5;j++){const a=j*Math.PI*2/5;const l=leafBlade(Math.cos(a)*.055,.66,Math.sin(a)*.055,.035,.12,.022,Math.cos(a)*.6,darkLeaf);l.rotation.x=Math.sin(a)*.18;}
+      twig(0,.735,0,.13,.018,mat('#447d35'));
+      break;}
+    case 'lemon': {
+      // Bright oval lemon with tapered tips, pores and a small green leaf.
+      const body=sphere(0,.435,0,.285,.19,.185,fruit,9,'produce',.08);body.rotation.z=.035;
+      const left=conePart(-.265,.435,0,.062,.15,fruit,7,'produce');left.rotation.z=Math.PI/2;
+      const right=conePart(.265,.435,0,.062,.15,fruit,7,'produce');right.rotation.z=-Math.PI/2;
+      for(let j=0;j<18;j++){const a=j*2.399,y=.435+Math.sin(a)*.13,x=Math.cos(a)*.22,z=Math.cos(a*1.7)*.12;sphere(x,y,z,.008,.008,.008,mat('#ffe56b'),4,'detail',.31+(j%4)*.02);}
+      twig(0,.62,0,.10,.015,mat('#72502e'));leafBlade(.11,.66,0,.08,.17,.03,.72,darkLeaf);
+      break;}
+    case 'orange': {
+      // Round dimpled orange with a dark navel and a leaf at the stem.
+      sphere(0,.435,0,.255,.255,.25,fruit,10,'produce',.08);
+      const pore=mat('#ffc05b');
+      for(let j=0;j<34;j++){const u=-.78+((j*7)%17)*.097;const a=j*2.399;const rr=Math.sqrt(Math.max(.10,1-u*u));const x=Math.cos(a)*.252*rr,z=Math.sin(a)*.248*rr,y=.435+u*.253;sphere(x,y,z,.009,.009,.009,pore,4,'detail',.34+(j%4)*.02);}
+      sphere(0,.687,0,.045,.018,.045,mat('#c66b2a'),6,'detail');twig(0,.72,0,.08,.014,stem);leafBlade(.12,.73,0,.09,.17,.03,.68,darkLeaf);
+      break;}
+    case 'peach': {
+      // Soft peach with a recognizable central crease and warm blush.
+      sphere(0,.435,0,.265,.245,.24,fruit,9,'produce',.08);
+      sphere(.08,.47,.222,.095,.15,.018,mat('#f7bb74'),7,'detail',.28);
+      tube([[0,.665,.055],[.012,.57,.20],[0,.46,.242],[-.01,.34,.20],[0,.225,.06]],.008,mat('#b65d60'),'detail',9);
+      twig(0,.69,0,.11,.016,mat('#77502d'));leafBlade(.12,.70,0,.09,.17,.03,.64,darkLeaf);
+      break;}
+    case 'pear': {
+      // Classic pear silhouette: broad rounded base narrowing into a tall neck.
+      sphere(0,.335,0,.27,.235,.245,fruit,9,'produce',.06);
+      sphere(0,.515,0,.155,.205,.15,fruit,9,'produce',.16);
+      sphere(0,.675,0,.072,.085,.072,fruit,7,'produce',.24);
+      twig(0,.765,0,.11,.016,mat('#79512e'));leafBlade(.105,.77,0,.09,.17,.03,.65,mat('#3d8841'));
+      break;}
+    case 'blueberry': {
+      // Cluster of small blue berries, each with a dark, star-shaped crown.
+      const positions=[[-.11,.49,.02],[-.01,.57,.035],[.10,.49,.015],[-.17,.39,.035],[ -.055,.40,.08],[.07,.40,.065],[.16,.38,.02],[0,.29,.03]];
+      for(let j=0;j<positions.length;j++){const [x,y,z]=positions[j];sphere(x,y,z,.095,.095,.09,fruit,8,'produce',.16+(j%4)*.025);
+        sphere(x,y+.085,z,.025,.012,.025,mat('#2c477f'),5,'detail',.31);
+        for(let k=0;k<5;k++){const a=k*Math.PI*2/5;const s=sphere(x+Math.cos(a)*.018,y+.09,z+Math.sin(a)*.018,.009,.008,.009,mat('#90a2dc'),4,'detail',.34+(k%2)*.02);}
+      }
+      twig(0,.70,0,.16,.015,stem);leafBlade(-.13,.71,0,.11,.20,.03,-.52,darkLeaf);leafBlade(.13,.70,.01,.10,.19,.03,.5,leaf);
+      break;}
+    case 'cherry': {
+      // Two glossy red cherries on long, forked stems.
+      tube([[0,.79,0],[-.035,.69,.01],[-.095,.57,.025],[-.14,.50,.035]],.013,mat('#638344'),'stem',9);
+      tube([[0,.76,0],[.055,.67,-.015],[.105,.57,-.005],[.15,.50,.02]],.013,mat('#638344'),'stem',9);
+      sphere(-.14,.40,.04,.132,.145,.125,fruit,9,'produce',.18);
+      sphere(.15,.40,.025,.132,.145,.125,fruit,9,'produce',.24);
+      sphere(-.18,.455,.15,.025,.028,.012,mat('#ff8a8a'),5,'detail',.34);sphere(.11,.455,.14,.025,.028,.012,mat('#ff8a8a'),5,'detail',.37);
+      leafBlade(.04,.73,0,.08,.16,.03,.48,darkLeaf);
+      break;}
+    case 'mushroom': {
+      // Red-orange mushroom cap, cream stem, underside and pale cap spots.
+      const stemBody=cylinder(root,0,.32,0,.105,.135,.47,mat('#f3ead7'),8);register(stemBody,'stem');
+      sphere(0,.51,0,.24,.065,.23,mat('#e3d4ba'),9,'detail',.10);
+      sphere(0,.595,0,.30,.17,.285,fruit,9,'produce',.12);
+      for(let j=0;j<9;j++){const a=j*2.399,r=.20+(j%3)*.02;const x=Math.cos(a)*r,z=Math.sin(a)*r*.91,y=.68+((j%3)-1)*.025;sphere(x,y,z,.033,.025,.033,mat('#fff1d7'),5,'detail',.28+(j%3)*.025);}
+      break;}
+    case 'garlic': {
+      // Off-white garlic head with segmented cloves, papery seams and dried leaves.
+      sphere(0,.385,0,.225,.245,.205,fruit,8,'root',.10);
+      for(let j=0;j<6;j++){const a=j*Math.PI/3;const cl=sphere(Math.cos(a)*.105,.39,Math.sin(a)*.09,.09,.19,.082,mat(j%2?'#f6f0e4':'#e7dfd0'),7,'root',.16+j*.018);cl.rotation.z=Math.cos(a)*.09;}
+      conePart(0,.60,0,.07,.13,mat('#d9ccbb'),6,'root',.24);
+      for(let j=0;j<5;j++){const a=j*Math.PI*2/5;const l=leafBlade(Math.cos(a)*.06,.72+(j%2)*.04,Math.sin(a)*.055,.035,.28,.024,Math.cos(a)*.22,darkLeaf);l.rotation.x=Math.sin(a)*.2;}
+      for(let j=0;j<4;j++){const a=j*Math.PI/2;tube([[Math.cos(a)*.03,.19,Math.sin(a)*.03],[Math.cos(a)*.05,.13,Math.sin(a)*.05],[Math.cos(a)*.015,.09,Math.sin(a)*.015]],.005,mat('#9c8770'),'detail',5);}
+      break;}
+    case 'rice': {
+      // Several slender rice stalks with drooping panicles and clearly visible grains.
+      for(let j=0;j<7;j++){const x=(j-3)*.075,lean=(j-3)*.035;
+        tube([[x,.08,0],[x+lean*.2,.34,0],[x+lean,.63,0],[x+lean*1.35,.76,.015]],.012,stem,'stem',8);
+        for(let k=0;k<3;k++){const side=k-1;const pts=[[x+lean*.8,.61,0],[x+lean*1.0+side*.035,.68,.015],[x+lean*1.4+side*.07,.73-k*.045,.03]];tube(pts,.009,mat('#b4a34a'),'stem',5);
+          for(let g=0;g<3;g++){sphere(pts[2][0]+g*.012,.73-k*.045-g*.018,.045,.018,.035,.016,mat('#e7d17b'),5,'produce',.32+(k%2)*.03);}}
+        const l=leafBlade(x,.37,0,.035,.30,.022,(j-3)*.17,mat('#55a050'));l.rotation.x=(j%2?-.27:.27);
+      }break;}
+    case 'coffee': {
+      // Small coffee shrub with paired glossy leaves and red coffee cherries in clusters.
+      twig(0,.46,0,.70,.027,mat('#5c7f39'));
+      for(let j=0;j<6;j++){const side=j%2?1:-1,y=.30+j*.085;const l=leafBlade(side*.14,y,0,.07,.20,.032,side*.62,mat(j%3?'#328749':'#4d9e4f'));l.rotation.x=side*.22;}
+      const clusters=[[-.13,.38,.04],[.13,.44,.04],[-.12,.55,.03],[.12,.60,.03],[0,.48,.12]];
+      const ripeCherry=mat('#cf3245');for(let i=0;i<clusters.length;i++){const [x,y,z]=clusters[i];for(let k=0;k<3;k++){const a=k*Math.PI*2/3;sphere(x+Math.cos(a)*.045,y+(k%2)*.035,z+Math.sin(a)*.035,.047,.052,.045,ripeCherry,7,'produce',.20+(k%3)*.03);}}
+      break;}
+    case 'mango': {
+      // Elongated tilted mango with a warm red blush on one side and a short stem.
+      const body=sphere(0,.45,0,.205,.335,.18,fruit,9,'produce',.08);body.rotation.z=-.27;
+      const blush=sphere(-.08,.49,.145,.105,.205,.018,mat('#e86a48'),7,'detail',.25);blush.rotation.z=-.25;
+      sphere(.07,.48,.15,.05,.13,.012,mat('#f5c35c'),6,'detail',.32);
+      twig(0,.77,0,.11,.016,mat('#79512e'));leafBlade(.11,.78,0,.09,.18,.03,.7,darkLeaf);
+      break;}
+    case 'kiwi': {
+      // Whole fuzzy brown kiwi: oval profile, fine surface hairs and a small stem scar.
+      const body=sphere(0,.43,0,.225,.285,.19,mat('#8b674c'),9,'produce',.08);body.rotation.z=-.12;
+      const hair=mat('#b18a62');
+      for(let j=0;j<34;j++){const a=j*2.399;const u=-.83+((j*11)%17)*.098;const rr=Math.sqrt(Math.max(.12,1-u*u));const x=Math.cos(a)*.225*rr,z=Math.sin(a)*.19*rr,y=.43+u*.282;sphere(x,y,z,.008,.015,.008,hair,4,'detail',.31+(j%4)*.025);}
+      sphere(0,.708,0,.045,.018,.04,mat('#67462f'),6,'detail');
+      break;}
+    default: {
+      sphere(0,.45,0,.27,.27,.27,fruit,7,'produce',.18);crownLeaves(5,.70,.18);
+    }
+  }
+  // Capture authored transforms so all 31 models can animate individual leaves,
+  // stems, roots and edible parts without replacing their hand-built geometry.
+  for(const part of root.userData.cropParts){
+    part.userData.cropAnimation={
+      kind:part.userData.cropPartKind||'produce',
+      delay:part.userData.cropPartDelay||0,
+      baseScale:part.scale.clone(),
+      basePosition:part.position.clone(),
+      baseRotation:part.rotation.clone(),
+      phase:Math.random()*Math.PI*2
+    };
+  }
+  const motionMap={
+    tomato:{sway:.035,leaf:.16,fruit:.045},carrot:{sway:.018,leaf:.28,fruit:.025},cabbage:{sway:.014,leaf:.22,fruit:.035},
+    berry:{sway:.035,leaf:.20,fruit:.075},melon:{sway:.018,leaf:.12,fruit:.035},corn:{sway:.026,leaf:.32,fruit:.025},
+    pumpkin:{sway:.015,leaf:.16,fruit:.045},eggplant:{sway:.055,leaf:.19,fruit:.055},cucumber:{sway:.045,leaf:.20,fruit:.06},
+    banana:{sway:.065,leaf:.22,fruit:.055},apple:{sway:.035,leaf:.16,fruit:.05},grapes:{sway:.045,leaf:.19,fruit:.075},
+    pineapple:{sway:.025,leaf:.28,fruit:.025},chili:{sway:.06,leaf:.22,fruit:.06},onion:{sway:.018,leaf:.20,fruit:.02},
+    potato:{sway:.014,leaf:.15,fruit:.02},beet:{sway:.025,leaf:.28,fruit:.025},broccoli:{sway:.022,leaf:.20,fruit:.04},
+    pepper:{sway:.025,leaf:.16,fruit:.045},lemon:{sway:.038,leaf:.18,fruit:.045},orange:{sway:.028,leaf:.17,fruit:.04},
+    peach:{sway:.035,leaf:.18,fruit:.05},pear:{sway:.035,leaf:.17,fruit:.045},blueberry:{sway:.045,leaf:.20,fruit:.075},
+    cherry:{sway:.06,leaf:.18,fruit:.08},mushroom:{sway:.015,leaf:.03,fruit:.035},garlic:{sway:.018,leaf:.22,fruit:.02},
+    rice:{sway:.035,leaf:.36,fruit:.03},coffee:{sway:.03,leaf:.19,fruit:.06},mango:{sway:.045,leaf:.18,fruit:.05},kiwi:{sway:.035,leaf:.12,fruit:.04}
+  };
+  root.userData.cropMotion=motionMap[c.shape]||{sway:.03,leaf:.18,fruit:.04};
+  attachCropAction(root,plot,slotIndex);return root;
+}
+
+const HOUSE_UPGRADE_COST={2:300,3:800,4:1200,5:1800,6:2500,7:3500,8:4800,9:6500,10:8500,11:11000,12:14000,13:17500,14:21500,15:26000};
+function updateHUD(){
+  $('moneyValue').textContent=`${money.toLocaleString('th-TH')} เหรียญ`;
+  $('inventoryValue').textContent=`${Object.values(inventory).reduce((a,b)=>a+b,0)} ชิ้น`;
+  $('houseLevelValue').textContent=`เลเวล ${houseLevel}/15`;
+  const total=Object.values(inventory).reduce((a,b)=>a+b,0);$('sellBtn').disabled=total===0;$('sellHint').textContent=total?`ขายได้ ${total} ชิ้น รับเงินเพิ่ม`:'ปลูกพืชเพื่อเก็บเกี่ยว';
+  $('seedList').innerHTML='';
+  for(const [key,c] of Object.entries(crops)){
+    const unlocked=houseLevel>=c.unlockLevel;
+    const button=document.createElement('button');button.className='seedCard'+(selectedCrop===key?' selected':'')+(!unlocked?' locked':'');button.disabled=!unlocked;
+    button.innerHTML=`<div class="seedTop"><span class="seedName">${c.name} ${c.emoji}</span><span class="earn">ขาย: +${c.sell.toLocaleString('th-TH')} 🪙</span></div><div class="seedBottom"><span class="cost">ปลูก: -${c.cost.toLocaleString('th-TH')} 🪙</span><span class="time">⏱ ${c.grow} วิ</span></div>${unlocked?'':`<div class="unlock">🔒 ปลดล็อกเมื่อบ้านเลเวล ${c.unlockLevel}</div>`}`;
+    button.addEventListener('click',()=>{if(houseLevel<c.unlockLevel){toast(`อัปเกรดบ้านเป็นเลเวล ${c.unlockLevel} เพื่อปลดล็อก${c.name}`);return;}selectedCrop=key;updateHUD();playSound('select');toast(`เลือก${c.name}แล้ว`);});$('seedList').appendChild(button);
+  }
+  const bList=$('buildList');bList.innerHTML='';
+  const exp=document.createElement('button');exp.className='buildCard';exp.disabled=unlockedPlots>=MAX_PLOTS||money<150;exp.innerHTML=`<div class="buildTop"><span class="buildName">ขยายแปลงผัก 🧱</span><span class="buildCost">-150 🪙</span></div><div class="buildDesc">ปลดล็อกแปลง ${Math.min(unlockedPlots+1,MAX_PLOTS)}/${MAX_PLOTS} ช่อง · มีแล้ว ${unlockedPlots} ช่อง · แปลงละ 2 ชนิด</div>`;exp.addEventListener('click',buyExpansion);bList.appendChild(exp);
+  const nextLevel=houseLevel+1,upgradeCost=HOUSE_UPGRADE_COST[nextLevel];const cropUnlocks=Object.values(crops).filter(c=>c.unlockLevel===nextLevel).length;
+  const up=document.createElement('button');up.className='buildCard';up.disabled=houseLevel>=15||money<upgradeCost;up.innerHTML=`<div class="buildTop"><span class="buildName">อัปเกรดบ้าน 🏠</span><span class="buildCost">${houseLevel>=15?'เต็มแล้ว':`-${upgradeCost.toLocaleString('th-TH')} 🪙`}</span></div><div class="buildDesc">${houseLevel>=15?'ถึงเลเวลสูงสุดแล้ว':`เลเวล ${houseLevel} → ${nextLevel} · ปลดล็อกพืชใหม่ ${cropUnlocks} ชนิด`}</div>`;up.addEventListener('click',buyHouseUpgrade);bList.appendChild(up);
+  const progression=document.createElement('div');progression.className='buildDesc';progression.style.cssText='padding:7px 4px 2px;line-height:1.6';progression.textContent=`พืชที่ปลดล็อกแล้ว ${Object.values(crops).filter(c=>houseLevel>=c.unlockLevel).length}/${Object.keys(crops).length} ชนิด`;bList.appendChild(progression);
+}
+function showTab(tab){const seeds=tab==='seed';$('seedTab').classList.toggle('active',seeds);$('buildTab').classList.toggle('active',!seeds);$('seedList').style.display=seeds?'flex':'none';$('buildList').style.display=seeds?'none':'flex';}
+$('seedTab').addEventListener('click',()=>showTab('seed'));$('buildTab').addEventListener('click',()=>showTab('build'));
+function spend(amount,x=0,z=0){if(money<amount){playSound('error');toast('เหรียญไม่พอ! ลองเก็บเกี่ยวแล้วขายผลผลิต');floatText('เหรียญไม่พอ!','#ff5b4c',x,GROUND+1.7,z);return false;}money-=amount;floatText(`-${amount} 🪙`,'#ef5346',x,GROUND+1.25,z);playSound('spend');updateHUD();return true;}
+function buyExpansion(){if(unlockedPlots>=MAX_PLOTS||!spend(150,2,1))return;const p=plots[unlockedPlots];if(!p)return;p.unlocked=true;p.group.visible=true;unlockedPlots++;updateHUD();playSound('build');toast(`ปลดล็อกแปลงผัก ${unlockedPlots}/${MAX_PLOTS} แล้ว! แต่ละแปลงปลูกได้ 2 ชนิด`);floatText('แปลงใหม่!','#18b968',p.x,GROUND+1.1,p.z);}
+function buyHouseUpgrade(){if(houseLevel>=15)return;const nextLevel=houseLevel+1,cost=HOUSE_UPGRADE_COST[nextLevel];if(!spend(cost,0,-5))return;houseLevel=nextLevel;createHouse(houseLevel);updateHUD();playSound('build');toast(`อัปเกรดบ้านเลเวล ${houseLevel}! ปลดล็อกพืชใหม่ 2 ชนิด 🌱`);floatText(`บ้าน Lv.${houseLevel}!`,'#228dd0',0,GROUND+3,-5);}
+
+function disposeCropRoot(root){if(!root)return;scene.remove(root);root.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});}
+function resetCropSlot(slot){disposeCropRoot(slot.plant);slot.plant=null;slot.crop=null;slot.growth=0;slot.ripe=false;slot.plantAge=0;slot.matureAge=0;slot.sprite.visible=false;slot.barClock=0;}
+function harvestSlot(slot){if(!slot?.plant||!slot.ripe)return false;const cropKey=slot.crop,name=crops[cropKey].name;inventory[cropKey]++;spawnCropReadyEffect(slot);resetCropSlot(slot);updateHUD();playSound('harvest');floatText(`เก็บ${name} +1`,'#21c875',slot.x,GROUND+1.5,slot.z);toast(`เก็บเกี่ยว${name}แล้ว!`);return true;}
+function plantIntoSlot(plot,slot){const c=crops[selectedCrop];if(slot.plant)return false;if(!spend(c.cost,slot.x,slot.z))return false;slot.crop=selectedCrop;slot.growth=0;slot.ripe=false;slot.plantAge=0;slot.matureAge=0;slot.plant=createCropModel(selectedCrop,plot,slot.slotIndex);scene.add(slot.plant);slot.plant.scale.setScalar(.001);slot.plant.position.y=GROUND+.045;slot.plant.rotation.set(0,0,0);slot.sprite.visible=true;slot.barClock=0;drawProgress(slot);spawnPlantPuffs(slot);playSound('plant');floatText(`ปลูก${c.name}แล้ว 🌱`,'#19b96c',slot.x,GROUND+1.3,slot.z);updateHUD();return true;}
+function plantPlot(plot,targetSlotIndex=null){
+  if(!plot?.unlocked)return;
+  if(houseLevel<crops[selectedCrop].unlockLevel){toast(`อัปเกรดบ้านเป็นเลเวล ${crops[selectedCrop].unlockLevel} เพื่อปลดล็อกพืชชนิดนี้`);playSound('error');return;}
+  if(Number.isInteger(targetSlotIndex)){const slot=plot.slots[targetSlotIndex];if(!slot)return;if(slot.plant){if(slot.ripe){harvestSlot(slot);}else{playSound('error');toast(`${crops[slot.crop].name}กำลังโต... อีก ${Math.max(1,Math.ceil((1-slot.growth)*crops[slot.crop].grow))} วินาที`);}return;}plantIntoSlot(plot,slot);return;}
+  // Soil clicks fill the first free side, allowing a second crop species in the same plot.
+  const empty=plot.slots.find(slot=>!slot.plant);if(empty){plantIntoSlot(plot,empty);return;}
+  const ripe=plot.slots.find(slot=>slot.ripe);if(ripe){harvestSlot(ripe);return;}
+  const growing=plot.slots.reduce((best,slot)=>!best||slot.growth>best.growth?slot:best,null);if(growing){playSound('error');toast(`พืชทั้ง 2 ชนิดกำลังโต · ${crops[growing.crop].name} เหลือ ${Math.max(1,Math.ceil((1-growing.growth)*crops[growing.crop].grow))} วินาที`);}
+}
+
+// Floating text mapped from world coordinates to screen coordinates.
+const floaters=[];
+function floatText(text,color,x,y,z){const el=document.createElement('div');el.className='floatText';el.textContent=text;el.style.color=color;document.body.appendChild(el);floaters.push({el,pos:new THREE.Vector3(x,y,z),life:1.15,max:1.15});}
+let toastTimer=null;function toast(message){const t=$('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2300);}
+
+// Synth-generated SFX only; audio wakes up after the first user gesture.
+let audioReady=false,audioLoading=null,synth=null,chime=null,errorSynth=null;
+async function ensureAudio(){if(audioReady)return true;if(audioLoading)return audioLoading;audioLoading=(async()=>{try{if(!Tone)Tone=await import('https://cdn.jsdelivr.net/npm/tone@15.0.4/build/esm/index.js');await Tone.start();synth=new Tone.Synth({oscillator:{type:'triangle'},envelope:{attack:.006,decay:.10,sustain:.025,release:.12}}).toDestination();chime=new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:.008,decay:.22,sustain:.025,release:.32}}).toDestination();errorSynth=new Tone.Synth({oscillator:{type:'square'},envelope:{attack:.008,decay:.10,sustain:0,release:.12}}).toDestination();audioReady=true;return true;}catch(e){audioLoading=null;return false;}})();return audioLoading;}
+function playSound(type){ensureAudio().then(ok=>{if(!ok)return;const now=Tone.now();try{if(type==='plant'){synth.triggerAttackRelease('C6','32n',now);synth.triggerAttackRelease('G6','16n',now+.055);synth.triggerAttackRelease('C7','32n',now+.105);}else if(type==='harvest'){chime.triggerAttackRelease('E6','16n',now);chime.triggerAttackRelease('A6','16n',now+.07);chime.triggerAttackRelease('C7','8n',now+.14);chime.triggerAttackRelease('E7','16n',now+.25);}else if(type==='ready'){chime.triggerAttackRelease('C6','16n',now);chime.triggerAttackRelease('E6','16n',now+.075);chime.triggerAttackRelease('G6','16n',now+.15);chime.triggerAttackRelease('C7','8n',now+.23);}else if(type==='error'){errorSynth.triggerAttackRelease('G3','8n',now);errorSynth.triggerAttackRelease('Eb3','8n',now+.1);}else if(type==='correct'){chime.triggerAttackRelease('G5','16n',now);chime.triggerAttackRelease('C6','16n',now+.08);chime.triggerAttackRelease('E6','8n',now+.16);}else if(type==='spend'){synth.triggerAttackRelease('E5','32n',now);}else if(type==='build'){chime.triggerAttackRelease('C5','16n',now);chime.triggerAttackRelease('E5','16n',now+.08);chime.triggerAttackRelease('G5','8n',now+.16);}else if(type==='select'){synth.triggerAttackRelease('A5','32n',now);}}catch(e){}});}
+
+// Expanded farming vocabulary quiz, reward and robot failure effect.
+// The robot now selects from a large farm-themed vocabulary bank.
+const farmVocabulary = [
+  ["Farm", "ฟาร์ม", "พื้นฐานฟาร์ม"],
+  ["Farmer", "เกษตรกร", "พื้นฐานฟาร์ม"],
+  ["Farmhouse", "บ้านไร่", "พื้นฐานฟาร์ม"],
+  ["Field", "ทุ่งเพาะปลูก", "พื้นฐานฟาร์ม"],
+  ["Garden", "สวน", "พื้นฐานฟาร์ม"],
+  ["Orchard", "สวนผลไม้", "พื้นฐานฟาร์ม"],
+  ["Greenhouse", "เรือนกระจก", "พื้นฐานฟาร์ม"],
+  ["Barn", "โรงนา", "พื้นฐานฟาร์ม"],
+  ["Shed", "โรงเก็บอุปกรณ์", "พื้นฐานฟาร์ม"],
+  ["Fence", "รั้ว", "พื้นฐานฟาร์ม"],
+  ["Gate", "ประตูรั้ว", "พื้นฐานฟาร์ม"],
+  ["Pond", "สระน้ำ", "พื้นฐานฟาร์ม"],
+  ["Well", "บ่อน้ำ", "พื้นฐานฟาร์ม"],
+  ["Soil", "ดิน", "พื้นฐานฟาร์ม"],
+  ["Mud", "โคลน", "พื้นฐานฟาร์ม"],
+  ["Compost", "ปุ๋ยหมัก", "พื้นฐานฟาร์ม"],
+  ["Fertilizer", "ปุ๋ย", "พื้นฐานฟาร์ม"],
+  ["Seed", "เมล็ดพันธุ์", "พืชและการเติบโต"],
+  ["Seedling", "ต้นกล้า", "พืชและการเติบโต"],
+  ["Sprout", "หน่ออ่อน", "พืชและการเติบโต"],
+  ["Root", "ราก", "พืชและการเติบโต"],
+  ["Stem", "ลำต้น", "พืชและการเติบโต"],
+  ["Leaf", "ใบไม้", "พืชและการเติบโต"],
+  ["Flower", "ดอกไม้", "พืชและการเติบโต"],
+  ["Fruit", "ผลไม้", "พืชและการเติบโต"],
+  ["Vegetable", "ผัก", "พืชและการเติบโต"],
+  ["Crop", "พืชผล", "พืชและการเติบโต"],
+  ["Weed", "วัชพืช", "พืชและการเติบโต"],
+  ["Grass", "หญ้า", "พืชและการเติบโต"],
+  ["Hay", "หญ้าแห้ง", "พืชและการเติบโต"],
+  ["Straw", "ฟาง", "พืชและการเติบโต"],
+  ["Pollen", "ละอองเกสร", "พืชและการเติบโต"],
+  ["Bud", "ตาดอก", "พืชและการเติบโต"],
+  ["Branch", "กิ่งไม้", "พืชและการเติบโต"],
+  ["Trunk", "ลำต้นไม้", "พืชและการเติบโต"],
+  ["Harvest", "เก็บเกี่ยว", "งานในฟาร์ม"],
+  ["Water", "น้ำ", "งานในฟาร์ม"],
+  ["Watering", "การรดน้ำ", "งานในฟาร์ม"],
+  ["Sow", "หว่านเมล็ด", "งานในฟาร์ม"],
+  ["Dig", "ขุด", "งานในฟาร์ม"],
+  ["Plow", "ไถนา", "งานในฟาร์ม"],
+  ["Prune", "ตัดแต่งกิ่ง", "งานในฟาร์ม"],
+  ["Pick", "เด็ดผลผลิต", "งานในฟาร์ม"],
+  ["Grow", "เติบโต", "งานในฟาร์ม"],
+  ["Bloom", "ออกดอก", "งานในฟาร์ม"],
+  ["Ripen", "ทำให้สุก", "งานในฟาร์ม"],
+  ["Ripe", "สุกพร้อมเก็บ", "งานในฟาร์ม"],
+  ["Wilt", "เหี่ยวเฉา", "งานในฟาร์ม"],
+  ["Spray", "พ่น", "งานในฟาร์ม"],
+  ["Feed", "ให้อาหารสัตว์", "งานในฟาร์ม"],
+  ["Milk (verb)", "รีดนม", "งานในฟาร์ม"],
+  ["Collect eggs", "เก็บไข่", "งานในฟาร์ม"],
+  ["Sell", "ขาย", "งานในฟาร์ม"],
+  ["Buy", "ซื้อ", "งานในฟาร์ม"],
+  ["Irrigation", "ระบบชลประทาน", "งานในฟาร์ม"],
+  ["Watering can", "บัวรดน้ำ", "เครื่องมือ"],
+  ["Shovel", "พลั่ว", "เครื่องมือ"],
+  ["Hoe", "จอบ", "เครื่องมือ"],
+  ["Rake", "คราด", "เครื่องมือ"],
+  ["Spade", "เสียม", "เครื่องมือ"],
+  ["Scythe", "เคียวด้ามยาว", "เครื่องมือ"],
+  ["Axe", "ขวาน", "เครื่องมือ"],
+  ["Wheelbarrow", "รถเข็น", "เครื่องมือ"],
+  ["Tractor", "รถแทรกเตอร์", "เครื่องมือ"],
+  ["Seed packet", "ซองเมล็ดพันธุ์", "เครื่องมือ"],
+  ["Gardening gloves", "ถุงมือทำสวน", "เครื่องมือ"],
+  ["Boots", "รองเท้าบูต", "เครื่องมือ"],
+  ["Basket", "ตะกร้า", "เครื่องมือ"],
+  ["Bucket", "ถังน้ำ", "เครื่องมือ"],
+  ["Sprinkler", "เครื่องพ่นน้ำ", "เครื่องมือ"],
+  ["Pump", "ปั๊มน้ำ", "เครื่องมือ"],
+  ["Sickle", "เคียวเกี่ยวข้าว", "เครื่องมือ"],
+  ["Trowel", "พลั่วมือ", "เครื่องมือ"],
+  ["Pruning shears", "กรรไกรตัดกิ่ง", "เครื่องมือ"],
+  ["Rope", "เชือก", "เครื่องมือ"],
+  ["Cart", "รถลาก", "เครื่องมือ"],
+  ["Lantern", "ตะเกียง", "เครื่องมือ"],
+  ["Tomato", "มะเขือเทศ", "ผักและผลไม้"],
+  ["Carrot", "แครอท", "ผักและผลไม้"],
+  ["Cabbage", "กะหล่ำปลี", "ผักและผลไม้"],
+  ["Strawberry", "สตรอว์เบอร์รี", "ผักและผลไม้"],
+  ["Watermelon", "แตงโม", "ผักและผลไม้"],
+  ["Corn", "ข้าวโพด", "ผักและผลไม้"],
+  ["Pumpkin", "ฟักทอง", "ผักและผลไม้"],
+  ["Eggplant", "มะเขือม่วง", "ผักและผลไม้"],
+  ["Cucumber", "แตงกวา", "ผักและผลไม้"],
+  ["Banana", "กล้วย", "ผักและผลไม้"],
+  ["Apple", "แอปเปิล", "ผักและผลไม้"],
+  ["Grape", "องุ่น", "ผักและผลไม้"],
+  ["Pineapple", "สับปะรด", "ผักและผลไม้"],
+  ["Chili pepper", "พริก", "ผักและผลไม้"],
+  ["Onion", "หอมหัวใหญ่", "ผักและผลไม้"],
+  ["Potato", "มันฝรั่ง", "ผักและผลไม้"],
+  ["Sweet potato", "มันเทศ", "ผักและผลไม้"],
+  ["Garlic", "กระเทียม", "ผักและผลไม้"],
+  ["Broccoli", "บรอกโคลี", "ผักและผลไม้"],
+  ["Bell pepper", "พริกหวาน", "ผักและผลไม้"],
+  ["Lemon", "เลมอน", "ผักและผลไม้"],
+  ["Orange", "ส้ม", "ผักและผลไม้"],
+  ["Peach", "ลูกพีช", "ผักและผลไม้"],
+  ["Pear", "ลูกแพร์", "ผักและผลไม้"],
+  ["Blueberry", "บลูเบอร์รี", "ผักและผลไม้"],
+  ["Cherry", "เชอร์รี", "ผักและผลไม้"],
+  ["Mushroom", "เห็ด", "ผักและผลไม้"],
+  ["Rice", "ข้าว", "ผักและผลไม้"],
+  ["Wheat", "ข้าวสาลี", "ผักและผลไม้"],
+  ["Lettuce", "ผักกาดหอม", "ผักและผลไม้"],
+  ["Spinach", "ผักโขม", "ผักและผลไม้"],
+  ["Pea", "ถั่วลันเตา", "ผักและผลไม้"],
+  ["Bean", "ถั่ว", "ผักและผลไม้"],
+  ["Radish", "หัวไชเท้า", "ผักและผลไม้"],
+  ["Beetroot", "บีตรูต", "ผักและผลไม้"],
+  ["Cauliflower", "กะหล่ำดอก", "ผักและผลไม้"],
+  ["Mango", "มะม่วง", "ผักและผลไม้"],
+  ["Kiwi", "กีวี", "ผักและผลไม้"],
+  ["Coconut", "มะพร้าว", "ผักและผลไม้"],
+  ["Papaya", "มะละกอ", "ผักและผลไม้"],
+  ["Lime", "มะนาว", "ผักและผลไม้"],
+  ["Dragon fruit", "แก้วมังกร", "ผักและผลไม้"],
+  ["Guava", "ฝรั่ง", "ผักและผลไม้"],
+  ["Jackfruit", "ขนุน", "ผักและผลไม้"],
+  ["Lychee", "ลิ้นจี่", "ผักและผลไม้"],
+  ["Longan", "ลำไย", "ผักและผลไม้"],
+  ["Durian", "ทุเรียน", "ผักและผลไม้"],
+  ["Rambutan", "เงาะ", "ผักและผลไม้"],
+  ["Mangosteen", "มังคุด", "ผักและผลไม้"],
+  ["Avocado", "อะโวคาโด", "ผักและผลไม้"],
+  ["Cocoa", "โกโก้", "ผักและผลไม้"],
+  ["Coffee bean", "เมล็ดกาแฟ", "ผักและผลไม้"],
+  ["Sunflower", "ทานตะวัน", "ผักและผลไม้"],
+  ["Oat", "ข้าวโอ๊ต", "ผักและผลไม้"],
+  ["Barley", "ข้าวบาร์เลย์", "ผักและผลไม้"],
+  ["Peanut", "ถั่วลิสง", "ผักและผลไม้"],
+  ["Chives", "กุยช่าย", "ผักและผลไม้"],
+  ["Asparagus", "หน่อไม้ฝรั่ง", "ผักและผลไม้"],
+  ["Zucchini", "ซูกินี", "ผักและผลไม้"],
+  ["Celery", "ขึ้นฉ่าย", "ผักและผลไม้"],
+  ["Kale", "เคล", "ผักและผลไม้"],
+  ["Okra", "กระเจี๊ยบเขียว", "ผักและผลไม้"],
+  ["Corn stalk", "ต้นข้าวโพด", "ผักและผลไม้"],
+  ["Pumpkin vine", "เถาฟักทอง", "ผักและผลไม้"],
+  ["Cow", "วัว", "สัตว์ในฟาร์ม"],
+  ["Bull", "วัวตัวผู้", "สัตว์ในฟาร์ม"],
+  ["Calf", "ลูกวัว", "สัตว์ในฟาร์ม"],
+  ["Chicken", "ไก่", "สัตว์ในฟาร์ม"],
+  ["Rooster", "ไก่ตัวผู้", "สัตว์ในฟาร์ม"],
+  ["Hen", "แม่ไก่", "สัตว์ในฟาร์ม"],
+  ["Chick", "ลูกไก่", "สัตว์ในฟาร์ม"],
+  ["Pig", "หมู", "สัตว์ในฟาร์ม"],
+  ["Piglet", "ลูกหมู", "สัตว์ในฟาร์ม"],
+  ["Sheep", "แกะ", "สัตว์ในฟาร์ม"],
+  ["Lamb", "ลูกแกะ", "สัตว์ในฟาร์ม"],
+  ["Goat", "แพะ", "สัตว์ในฟาร์ม"],
+  ["Horse", "ม้า", "สัตว์ในฟาร์ม"],
+  ["Foal", "ลูกม้า", "สัตว์ในฟาร์ม"],
+  ["Duck", "เป็ด", "สัตว์ในฟาร์ม"],
+  ["Duckling", "ลูกเป็ด", "สัตว์ในฟาร์ม"],
+  ["Goose", "ห่าน", "สัตว์ในฟาร์ม"],
+  ["Rabbit", "กระต่าย", "สัตว์ในฟาร์ม"],
+  ["Bee", "ผึ้ง", "สัตว์ในฟาร์ม"],
+  ["Beehive", "รังผึ้ง", "สัตว์ในฟาร์ม"],
+  ["Farm dog", "สุนัขเฝ้าฟาร์ม", "สัตว์ในฟาร์ม"],
+  ["Cat", "แมว", "สัตว์ในฟาร์ม"],
+  ["Milk (noun)", "นม", "ผลผลิตจากฟาร์ม"],
+  ["Egg", "ไข่", "ผลผลิตจากฟาร์ม"],
+  ["Honey", "น้ำผึ้ง", "ผลผลิตจากฟาร์ม"],
+  ["Wool", "ขนแกะ", "ผลผลิตจากฟาร์ม"],
+  ["Grain", "ธัญพืช", "ผลผลิตจากฟาร์ม"],
+  ["Animal feed", "อาหารสัตว์", "ผลผลิตจากฟาร์ม"],
+  ["Sunlight", "แสงแดด", "ธรรมชาติและอากาศ"],
+  ["Rain", "ฝน", "ธรรมชาติและอากาศ"],
+  ["Cloud", "เมฆ", "ธรรมชาติและอากาศ"],
+  ["Wind", "ลม", "ธรรมชาติและอากาศ"],
+  ["Drought", "ภัยแล้ง", "ธรรมชาติและอากาศ"],
+  ["Season", "ฤดูกาล", "ธรรมชาติและอากาศ"],
+  ["Moisture", "ความชื้น", "ธรรมชาติและอากาศ"],
+  ["Pest", "แมลงศัตรูพืช", "ธรรมชาติและอากาศ"],
+  ["Ladybug", "เต่าทอง", "ธรรมชาติและอากาศ"],
+  ["Earthworm", "ไส้เดือน", "ธรรมชาติและอากาศ"],
+  ["Butterfly", "ผีเสื้อ", "ธรรมชาติและอากาศ"],
+  ["Bird", "นก", "ธรรมชาติและอากาศ"],
+  ["Nest", "รังนก", "ธรรมชาติและอากาศ"],
+  ["Shade", "ร่มเงา", "ธรรมชาติและอากาศ"],
+  ["Mountain", "ภูเขา", "ธรรมชาติและอากาศ"],
+  ["River", "แม่น้ำ", "ธรรมชาติและอากาศ"],
+  ["Island", "เกาะ", "ธรรมชาติและอากาศ"],
+  ["Ocean", "มหาสมุทร", "ธรรมชาติและอากาศ"]
+];
+function buildQuizOptions(correctAnswer){
+  const alternatives = [...new Set(farmVocabulary.map(item=>item[1]))].filter(answer=>answer!==correctAnswer);
+  for(let i=alternatives.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[alternatives[i],alternatives[j]]=[alternatives[j],alternatives[i]];}
+  return [correctAnswer,...alternatives.slice(0,3)];
+}
+const questions = farmVocabulary.map(([word,answer,category])=>({
+  word, answer, category,
+  question:`${word} แปลว่าอะไร?`,
+  options:buildQuizOptions(answer)
+}));
+let currentQuestion=null,quizAnswered=false,buffEnd=0,brokenEnd=0,robotHappyEnd=0,lastSignSec=-1;
+$('closeModal').addEventListener('click',()=>{$('modalWrap').classList.remove('open');});
+function openQuiz(){if(brokenEnd>performance.now()/1000){playSound('error');toast('หุ่นยนต์กำลังซ่อมตัวเอง รอสักครู่นะ!');return;}if(buffEnd>performance.now()/1000){toast('กำลังรดน้ำอยู่! บัฟยังเหลืออีกสักครู่ 🌊');playSound('select');return;}ensureAudio();currentQuestion=questions[Math.floor(Math.random()*questions.length)];quizAnswered=false;$('questionText').textContent=currentQuestion.question;$('modalTitle').textContent='🤖 หุ่นยนต์ช่วยรดน้ำ';$('modalSub').textContent=`หมวด ${currentQuestion.category} · สุ่มจาก ${questions.length} คำศัพท์ · ตอบถูกได้บัฟรดน้ำ 10 วินาที`;$('quizFeedback').textContent='';const holder=$('answerButtons');holder.innerHTML='';const shuffled=[...currentQuestion.options].sort(()=>Math.random()-.5);for(const opt of shuffled){const b=document.createElement('button');b.className='answer';b.textContent=opt;b.addEventListener('click',()=>answerQuiz(opt,b));holder.appendChild(b);}$('modalWrap').classList.add('open');}
+function answerQuiz(answer,button){if(quizAnswered)return;quizAnswered=true;const buttons=[...$('answerButtons').children];buttons.forEach(b=>{b.disabled=true;if(b.textContent===currentQuestion.answer)b.classList.add('correct');});if(answer===currentQuestion.answer){buffEnd=performance.now()/1000+10;robotHappyEnd=buffEnd;robotRoot.userData.mood='happy';updateRobotSign('รดน้ำ 💦','buff');playSound('correct');floatText('ตอบถูก! +บัฟรดน้ำ','#19bd6e',-4.45,GROUND+3.35,.58);$('quizFeedback').style.color='#12a960';$('quizFeedback').textContent='เก่งมาก! พืชทุกแปลงโตไวขึ้น 1.5 เท่า 10 วินาที 💦';}else{button.classList.add('wrong');brokenEnd=performance.now()/1000+10;robotRoot.userData.mood='broken';updateRobotSign('พัง! 10s','broken');playSound('error');spawnSparks(new THREE.Vector3(-4.45,GROUND+1.4,.58),25);floatText('ลองใหม่อีกครั้ง!','#f05044',-4.45,GROUND+3.35,.58);$('quizFeedback').style.color='#e64c40';$('quizFeedback').textContent='อุ๊ย! หุ่นยนต์ต้องซ่อมตัวเอง 10 วินาที 😵';}
+  setTimeout(()=>$('modalWrap').classList.remove('open'),1650);
+}
+
+$('sellBtn').addEventListener('click',()=>{let total=0,earned=0;for(const [key,count] of Object.entries(inventory)){total+=count;earned+=count*crops[key].sell;inventory[key]=0;}if(!total)return;money+=earned;updateHUD();playSound('harvest');floatText(`+${earned} 🪙`,'#19b96c',-2,GROUND+2.1,1);toast(`ขายผลผลิต ${total} ชิ้น ได้ ${earned} เหรียญ!`);});
+
+// Particle effects: rising smoke, water droplets, and falling sparks.
+const particles=[];
+function addParticle(type,pos,velocity,life=1,scale=.1){let geo,material;if(type==='smoke'){geo=new THREE.IcosahedronGeometry(scale,0);material=new THREE.MeshStandardMaterial({color:'#e6f6ff',transparent:true,opacity:.62,roughness:1,flatShading:true,depthWrite:false});}else if(type==='water'){geo=new THREE.SphereGeometry(scale,6,5);material=new THREE.MeshStandardMaterial({color:'#8ce8ff',emissive:'#228eb9',emissiveIntensity:.35,transparent:true,opacity:.95,roughness:.2});}else if(type==='growth'||type==='harvest'){geo=type==='harvest'?new THREE.OctahedronGeometry(scale,0):new THREE.TetrahedronGeometry(scale,0);const color=type==='harvest'?['#ffe45e','#fff5b5','#a9f56c'][Math.floor(Math.random()*3)]:['#71e56f','#bcf58c','#fff09a'][Math.floor(Math.random()*3)];material=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.3,transparent:true,opacity:.95,roughness:.35,flatShading:true});}else{geo=new THREE.TetrahedronGeometry(scale,0);material=new THREE.MeshStandardMaterial({color:Math.random()>.5?'#ffb328':'#ff613f',emissive:'#ff3e13',emissiveIntensity:.4,flatShading:true});}
+ const m=new THREE.Mesh(geo,material);m.position.copy(pos);m.castShadow=false;scene.add(m);particles.push({mesh:m,type,velocity:velocity.clone(),life,maxLife:life,material});}
+function spawnSparks(pos,count){for(let i=0;i<count;i++){const v=new THREE.Vector3((Math.random()-.5)*4,1+Math.random()*4,(Math.random()-.5)*4);addParticle('spark',pos.clone().add(new THREE.Vector3((Math.random()-.5)*.4,.2,(Math.random()-.5)*.4)),v,.6+Math.random()*.9,.055+Math.random()*.035);}}
+function spawnPlantPuffs(plot){for(let i=0;i<6;i++){const a=Math.random()*Math.PI*2,r=.08+Math.random()*.18;const pos=new THREE.Vector3(plot.x+Math.cos(a)*r,GROUND+.25,plot.z+Math.sin(a)*r);const v=new THREE.Vector3((Math.random()-.5)*.8,.55+Math.random()*.75,(Math.random()-.5)*.8);addParticle('growth',pos,v,.42+Math.random()*.25,.035+Math.random()*.025);}}
+function spawnCropReadyEffect(plot){for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,r=.18+Math.random()*.3;const pos=new THREE.Vector3(plot.x+Math.cos(a)*r,GROUND+.72+Math.random()*.32,plot.z+Math.sin(a)*r);const v=new THREE.Vector3((Math.random()-.5)*1.2,.45+Math.random()*1.15,(Math.random()-.5)*1.2);addParticle('harvest',pos,v,.55+Math.random()*.4,.035+Math.random()*.035);}}
+function updateParticles(dt,time){
+  // Regular chimney smoke puffs.
+  if(Math.random()<.13){const p=chimneyPoint.clone().add(new THREE.Vector3((Math.random()-.5)*.2,0,(Math.random()-.5)*.2));addParticle('smoke',p,new THREE.Vector3((Math.random()-.5)*.13,.65+Math.random()*.28,(Math.random()-.5)*.13),1.7+Math.random()*.7,.16+Math.random()*.09);}
+  if(buffEnd>time&&Math.random()<.55){for(const plot of plots){if(!plot.unlocked)continue;for(const slot of plot.slots){if(slot.plant&&Math.random()<.16){const pos=new THREE.Vector3(slot.x+(Math.random()-.5)*.28,GROUND+1.65+Math.random()*.5,slot.z+(Math.random()-.5)*.3);addParticle('water',pos,new THREE.Vector3((Math.random()-.5)*.25,-1.8-Math.random(),(Math.random()-.5)*.25),.65,.045);}}}}
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y+=p.type==='smoke'?.12:p.type==='water'?-1.9:(p.type==='growth'||p.type==='harvest')?-.9:-5.2;p.mesh.position.addScaledVector(p.velocity,dt);if(p.type==='smoke'){const k=1-dt*.6;p.mesh.scale.multiplyScalar(Math.max(.95,k));p.material.opacity=Math.max(0,.62*(p.life/p.maxLife));p.mesh.rotation.y+=dt*.35;}else if(p.type==='spark'){p.mesh.rotation.x+=dt*8;p.mesh.rotation.z+=dt*5;}else {p.mesh.scale.multiplyScalar(p.type==='harvest'?Math.max(.96,1+dt*.45):.99);p.material.opacity=Math.max(0,.95*(p.life/p.maxLife));if(p.type==='growth'||p.type==='harvest'){p.mesh.rotation.x+=dt*4;p.mesh.rotation.z+=dt*3;}}
+    if(p.life<=0||(p.type!=='smoke'&&p.mesh.position.y<GROUND+.1)){scene.remove(p.mesh);p.mesh.geometry.dispose();p.material.dispose();particles.splice(i,1);}}
+}
+
+// Click picking. A brief drag of OrbitControls does not plant anything.
+function findAction(obj){let o=obj;while(o){if(o.userData&&o.userData.action)return o.userData;o=o.parent;}return null;}
+renderer.domElement.addEventListener('pointerdown',e=>{pointerStart={x:e.clientX,y:e.clientY};});
+renderer.domElement.addEventListener('pointerup',e=>{if(!pointerStart)return;const moved=Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y);pointerStart=null;if(moved>5)return;if($('modalWrap').classList.contains('open'))return;
+  pointer.x=(e.clientX/innerWidth)*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(scene.children,true);for(const hit of hits){const action=findAction(hit.object);if(action?.action==='crop'){const p=plots[action.plotIndex];if(p&&p.unlocked){plantPlot(p,action.slotIndex);return;}}if(action?.action==='plot'){const p=plots[action.plotIndex];if(p&&p.unlocked){plantPlot(p);return;}}if(action?.action==='robot'){openQuiz();return;}}
+});
+robotBody.traverse(o=>{if(o.isMesh)o.userData.action='robot';});robotHit.userData.action='robot';
+// Make keyboard shortcut usable as well as clicking the robot model.
+window.addEventListener('keydown',e=>{if(e.key==='Escape')$('modalWrap').classList.remove('open');if(e.key.toLowerCase()==='q')openQuiz();});
+
+// Per-part growth stages make every crop (all 31 types) visibly sprout, unfold,
+// develop its edible parts, sway with the breeze, and celebrate when mature.
+function smooth01(a,b,v){const t=THREE.MathUtils.clamp((v-a)/(b-a),0,1);return t*t*(3-2*t);}
+function animateCropParts(plot,now){
+  const root=plot.plant;if(!root)return;
+  const profile=root.userData.cropMotion||{sway:.03,leaf:.18,fruit:.04};
+  const g=plot.growth;
+  for(const part of (root.userData.cropParts||[])){
+    const a=part.userData.cropAnimation;if(!a)continue;
+    let stage=1;
+    if(!plot.ripe){
+      if(a.kind==='stem')stage=smooth01(0.005,.30+a.delay*.25,g);
+      else if(a.kind==='leaf')stage=smooth01(.015,.38+a.delay*.5,g);
+      else if(a.kind==='root')stage=smooth01(.08,.82+a.delay*.25,g);
+      else if(a.kind==='detail')stage=smooth01(.30+a.delay,.91+a.delay*.25,g);
+      else stage=smooth01(.17+a.delay,.83+a.delay*.65,g);
+    }
+    let motionScale=1;
+    if(a.kind==='produce'&&plot.ripe)motionScale=1+Math.sin(now*4.2+a.phase)*profile.fruit;
+    else if(a.kind==='produce')motionScale=1+Math.sin(now*2.4+a.phase)*.014*g;
+    part.scale.copy(a.baseScale).multiplyScalar(Math.max(.012,stage*motionScale));
+    part.position.copy(a.basePosition);
+    const wind=plot.ripe?1:(.18+.82*g);
+    if(a.kind==='leaf'){
+      part.rotation.set(
+        a.baseRotation.x+Math.sin(now*2.2+a.phase)*profile.leaf*.24*wind,
+        a.baseRotation.y+Math.cos(now*1.7+a.phase)*profile.leaf*.15*wind,
+        a.baseRotation.z+Math.sin(now*2.0+a.phase)*profile.leaf*wind
+      );
+    }else if(a.kind==='stem'){
+      part.rotation.set(a.baseRotation.x+Math.sin(now*1.7+a.phase)*profile.sway*.25*wind,
+        a.baseRotation.y,
+        a.baseRotation.z+Math.sin(now*1.55+a.phase)*profile.sway*.45*wind);
+    }else{
+      part.rotation.copy(a.baseRotation);
+      if(a.kind==='produce'&&stage>.25){
+        part.position.y+=Math.sin(now*2.7+a.phase)*(plot.ripe?.022:.012*g);
+        part.rotation.z+=Math.sin(now*1.8+a.phase)*profile.sway*.18*wind;
+      }
+    }
+  }
+  const sw=plot.ripe?1:(.2+.8*g);
+  root.rotation.y=Math.sin(now*.92+plot.index*.83)*profile.sway*.75*sw;
+  root.rotation.z=Math.sin(now*1.45+plot.index*.91)*profile.sway*sw;
+  root.rotation.x=Math.cos(now*1.2+plot.index*.7)*profile.sway*.34*sw;
+}
+
+// Keep the canvas crisp and the HUD live.
+updateHUD();
+let lastTime=performance.now()/1000,waterTimer=0;
+function animate(){requestAnimationFrame(animate);const now=performance.now()/1000;const dt=Math.min(.05,Math.max(0,now-lastTime));lastTime=now;controls.update();
+  const pos=waterGeo.attributes.position;for(let i=0;i<pos.count;i++){const x=waterBase[i*3],z=waterBase[i*3+2];pos.array[i*3+1]=waterBase[i*3+1]+Math.sin(x*.13+now*1.2)*.06+Math.cos(z*.16-now*.8)*.045+Math.sin((x+z)*.08+now)*.025;}pos.needsUpdate=true;if(Math.floor(now*12)%2===0)waterGeo.computeVertexNormals();
+  for(const t of trees){t.pivot.rotation.z=t.baseRot+Math.sin(now*.75+t.phase)*.035;t.pivot.rotation.x=Math.cos(now*.62+t.phase)*.022;}
+  const buff=buffEnd>now,broken=brokenEnd>now;
+  if(buff){robotRoot.rotation.y+=dt*4.2;robotRoot.position.x=-4.45+Math.sin(now*5)*.06;}else if(broken){robotRoot.rotation.y=Math.sin(now*22)*.1;robotRoot.position.x=-4.45+Math.sin(now*36)*.09;robotRoot.rotation.z=Math.sin(now*34)*.075;}else{robotRoot.position.x=-4.45;robotRoot.rotation.z=Math.sin(now*1.5)*.015;robotRoot.rotation.y=Math.sin(now*.65)*.05;}
+  robotRoot.position.y=0;signSprite.position.set(-4.45+(broken?Math.sin(now*36)*.09:buff?Math.sin(now*5)*.06:0),GROUND+3.05,.58);
+  if(Math.floor(now)!==lastSignSec){lastSignSec=Math.floor(now);if(broken){const remain=Math.max(0,Math.ceil(brokenEnd-now));updateRobotSign(`พัง! ${remain}s`,'broken');}else if(buff){updateRobotSign('รดน้ำ 💦','buff');}else{if(robotSignMode!=='quiz')updateRobotSign('QUIZ 🤖','quiz');}}
+  if(!broken&&robotRoot.userData.mood==='broken')robotRoot.userData.mood='idle';
+  if(!buff&&robotRoot.userData.mood==='happy')robotRoot.userData.mood='idle';
+  for(const plot of plots){
+    if(!plot.unlocked)continue;
+    for(const p of plot.slots){
+      if(!p.plant)continue;
+      if(!p.ripe){
+        const c=crops[p.crop];p.growth=Math.min(1,p.growth+dt/c.grow*(buff?1.5:1));p.plantAge+=dt;
+        const emergence=smooth01(0,.48,p.plantAge);
+        const growScale=.12+.88*Math.pow(p.growth,.68);
+        const pop=p.plantAge<.64?1+Math.sin((p.plantAge/.64)*Math.PI)*.20*(1-p.plantAge/.82):1;
+        p.plant.scale.setScalar(Math.max(.001,growScale*emergence*pop));
+        p.plant.position.y=GROUND+.045+.145*emergence+(p.plantAge<.5?Math.sin((p.plantAge/.5)*Math.PI)*.045:Math.sin(now*2+p.index)*.012);
+        p.barClock+=dt;if(p.barClock>.055){p.barClock=0;drawProgress(p);}
+        if(p.growth>=1){
+          p.ripe=true;p.matureAge=0;p.sprite.visible=false;
+          spawnCropReadyEffect(p);playSound('ready');
+          floatText(`${crops[p.crop].emoji} พร้อมเก็บ!`,'#20c978',p.x,GROUND+1.8,p.z);
+        }
+      }
+      if(p.ripe){
+        p.matureAge+=dt;
+        const t=Math.min(1,p.matureAge/.68);
+        const pop=p.matureAge<.68?1+.28*Math.sin(t*Math.PI)*(1-.25*t):1+Math.sin(now*4+p.index)*.035;
+        p.plant.scale.setScalar(pop);
+        p.plant.position.y=GROUND+.19+(p.matureAge<.68?Math.sin(t*Math.PI)*.17:Math.sin(now*3.1+p.index)*.025);
+      }
+      animateCropParts(p,now);
+    }
+  }
+  updateParticles(dt,now);
+  for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];f.life-=dt;const v=f.pos.clone();v.y+=(1-f.life/f.max)*.8;v.project(camera);f.el.style.left=((v.x*.5+.5)*innerWidth)+'px';f.el.style.top=((-v.y*.5+.5)*innerHeight)+'px';f.el.style.opacity=Math.max(0,f.life/f.max);f.el.style.transform=`translate(-50%,${-20-(1-f.life/f.max)*24}px) scale(${.95+(1-f.life/f.max)*.08})`;if(f.life<=0){f.el.remove();floaters.splice(i,1);}}
+  // Update countdown text less often without forcing a DOM rewrite each frame.
+  controls.enabled=true;renderer.render(scene,camera);
+}
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));});
+// Start rendering, then fade the loading panel after the first frame.
+animate();setTimeout(()=>{const loading=$('loading');loading.style.opacity='0';setTimeout(()=>loading.remove(),400);},700);
+</script>
+</body>
+</html>
